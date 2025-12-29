@@ -45,3 +45,20 @@ def save_team_name(name):
     except IOError as e:
         print(f"ОШИБКА: Не удалось сохранить название команды: {e}")
         return False
+
+# players/team_manager.py
+
+# ... (после save_team_name) ...
+
+def reset_team():
+    """Удаляет файл team.json, распуская команду."""
+    if os.path.exists(TEAM_FILE):
+        try:
+            os.remove(TEAM_FILE)
+            print(f"ЛОГ: Файл команды {TEAM_FILE} удален.")
+            return True
+        except Exception as e:
+            # Сюда попадают ошибки доступа или прав
+            print(f"ЛОГ ОШИБКИ: Не удалось удалить файл {TEAM_FILE}: {e}")
+            return False
+    return False

@@ -1,45 +1,110 @@
 # players/manager.py
+
 # players/manager.py (Финальная версия, изолированная от других команд)
 import json
 import os
 import datetime
-from players.team_manager import get_team_name  # Для проверки наличия активной команды
+# Убедитесь, что вы импортируете обе нужные функции, если reset_team вызывается в delete_player
+from players.team_manager import get_team_name, reset_team
+
 
 PLAYERS_FILE = 'players.json'
 
+# ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ КОМАНДЫ (Временно) -------------------
+# Эти функции нужны для проверки и сброса команды.
 
+
+
+# ----------------------------------------------------------------------------------
 # --- Вспомогательные функции для работы с файлом ---
 
 def _load_players_data():
-    """Загружает данные игроков и активного игрока из players.json."""
+    """Загружает данные игроков и активного игрока, гарантируя структуру по умолчанию."""
+    default_data = {"active_player": None, "players": []}
+
     if not os.path.exists(PLAYERS_FILE):
-        # Структура по умолчанию: нет активного игрока, нет игроков
-        return {"active_player": None, "players": {}}
+        return default_data
+
     try:
         with open(PLAYERS_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            # Убеждаемся, что это словарь и содержит нужные ключи
-            if isinstance(data, dict) and 'players' in data:
-                return data
-            else:
-                return {"active_player": None, "players": {}}
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"active_player": None, "players": {}}
+
+            if not isinstance(data, dict):
+                return default_data
+
+            # Гарантия 1: active_player
+            if 'active_player' not in data:
+                data['active_player'] = default_data['active_player']
+
+            # Гарантия 2: players должен быть списком
+            if 'players' not in data or not isinstance(data['players'], list):
+                data['players'] = default_data['players']
+
+            return data
+
+    except (FileNotFoundError, json.JSONDecodeError, Exception) as e:
+        print(f"ЛОГ ПРЕДУПРЕЖДЕНИЕ: Ошибка при загрузке {PLAYERS_FILE} ({e}). Возврат к значениям по умолчанию.")
+        return default_data
 
 
 def _save_players_data(data):
     """Сохраняет данные игроков в players.json."""
-    # Сохраняем только если команда существует (чтобы не сохранять пустые данные, если команда не создана)
-    if not get_team_name():
-        return False
-
     try:
         with open(PLAYERS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4, default=str)
+            json.dump(data, f, indent=4, ensure_ascii=False)
         return True
-    except IOError as e:
-        print(f"ОШИБКА: Не удалось сохранить данные игроков: {e}")
+    except Exception as e:
+        print(f"ЛОГ ОШИБКИ: Не удалось сохранить данные игроков: {e}")
         return False
+
+
+def delete_player(name_to_delete):
+    """
+    Удаляет игрока из списка.
+    Если удаляется последний игрок, удаляет команду.
+    """
+    team_name = get_team_name()
+    if not team_name:
+        print("ЛОГ ОШИБКИ: Невозможно удалить игрока без активной команды.")
+        return False
+
+    data = _load_players_data()
+    name_to_delete = name_to_delete.strip()
+
+    initial_count = len(data['players'])
+
+    # 1. Удаление игрока
+    data['players'] = [
+        player
+        for player in data['players']
+        if isinstance(player, dict) and player.get('name') != name_to_delete
+    ]
+
+    if len(data['players']) == initial_count:
+        print(f"ЛОГ ОШИБКИ: Игрок '{name_to_delete}' не найден для удаления.")
+        return False
+
+        # 2. Обработка active_player до проверки списка
+    deleted_was_active = (data.get('active_player') == name_to_delete)
+
+    # 3. Проверка: Если игроков не осталось (ФИНАЛЬНЫЙ ШТРИХ)
+    if not data['players']:
+
+        # 3а. Сбрасываем active_player и сохраняем пустой список игроков
+        data['active_player'] = None
+        _save_players_data(data)
+
+
+
+    else:
+        # 4. Если игроки остались
+        if deleted_was_active:
+            # Делаем первого игрока в новом списке активным
+            data['active_player'] = data['players'][0]['name']
+
+        _save_players_data(data)  # Сохраняем обновленный список и active_player
+
+    return True
 
 
 # --- Основные функции логики ---
@@ -88,72 +153,103 @@ def get_current_player_name():
 
 
 def get_all_player_names():
-    """
-    Возвращает список всех имен игроков в текущей активной команде.
-    Возвращает пустой список, если команда не создана или игроков нет.
-    """
-    if not get_team_name():
-        return []
-
+    """Возвращает список имен всех игроков в команде."""
     data = _load_players_data()
-
-    # --- ИСПРАВЛЕНИЕ: ДОБАВЛЯЕМ ПРОВЕРКУ ТИПА В ГЕНЕРАТОРЕ ---
-    # Мы извлекаем 'name' ТОЛЬКО если player является словарем (dict)
-    names = [player.get('name')
-             for player in data.get('players', [])
-             if isinstance(player, dict)]
-
-    return names
+    return [player.get('name') for player in data['players'] if isinstance(player, dict) and 'name' in player]
 
 
 # players/manager.py
 
 # ... (другие функции) ...
 
-def save_current_player(name):
+def save_current_player(player_name):
     """
-    Устанавливает игрока активным. Если игрока нет, создает его,
-    добавляя в список, и делает активным.
+    Сохраняет игрока (если новый) и делает его активным.
     """
-    team_name = get_team_name()
-    if not team_name:
-        print("ЛОГ ОШИБКИ: Невозможно сохранить игрока без активной команды.")
+    player_name = player_name.strip()
+
+    # 1. ЗАЩИТА: Блокируем сохранение служебных имен и пустых строк
+    if not player_name or player_name.lower() == "добавить нового игрока":
+        print("ЛОГ ОШИБКИ: Попытка сохранить недопустимое имя игрока.")
         return False
 
     data = _load_players_data()
-    name = name.strip()
-    player_found = False
 
-    # 1. Ищем игрока в списке.
-    #    При этом сбрасываем флаг 'active' у всех других.
+    # 2. Проверка, существует ли игрок
+    is_new_player = True
     for player in data['players']:
-        if player['name'] == name:
-            player_found = True
-            player['active'] = True  # Устанавливаем текущего игрока
-        else:
-            player['active'] = False  # Сбрасываем флаг для других
+        if player.get('name') == player_name:
+            is_new_player = False
+            break
 
-    # 2. Если игрок не найден (т.е. это новый игрок)
-    if not player_found:
-        # 2a. Создаем объект нового игрока
+    # 3. Если игрок новый, добавляем его с данными по умолчанию
+    if is_new_player:
         new_player_data = {
-            "name": name,
-            "active": True,
+            "name": player_name,
+
+            # ИСПРАВЛЕНИЕ: Вызов должен быть datetime.datetime.now()
             "created_at": datetime.datetime.now().isoformat(timespec='seconds'),
-            "best_game": {},
-            "total": {'games': 0, 'moves': 0, 'time': 0}
+            "best_game": {},  # {'moves': 50, 'time': 120, 'date': '...'}
+            "total": {"games": 0, "moves": 0, "time": 0}
         }
-        # 2b. ДОБАВЛЕНИЕ: Используем .append() для списка (ИСПРАВЛЕНИЕ ОШИБКИ)
         data['players'].append(new_player_data)
-        print(f"ЛОГ: Новый игрок '{name}' добавлен в команду '{team_name}'.")
 
-    # 3. Устанавливаем игрока активным в корневом объекте
-    data['active_player'] = name
+    # 4. Делаем игрока активным
+    data['active_player'] = player_name
 
-    _save_players_data(data)
-    print(f"ЛОГ: Игрок '{name}' выбран как активный в команде '{team_name}'.")
+    # 5. Сохраняем и возвращаем результат
+    return _save_players_data(data)
+
+
+def delete_player(name_to_delete):
+    """
+    Удаляет игрока из списка.
+    Если удаляется последний игрок, удаляет команду.
+    """
+    team_name = get_team_name()
+    if not team_name:
+        print("ЛОГ ОШИБКИ: Невозможно удалить игрока без активной команды.")
+        return False
+
+    data = _load_players_data()
+    name_to_delete = name_to_delete.strip()
+
+    initial_count = len(data['players'])
+
+    # 1. Удаление игрока
+    data['players'] = [
+        player
+        for player in data['players']
+        if isinstance(player, dict) and player.get('name') != name_to_delete
+    ]
+
+    if len(data['players']) == initial_count:
+        print(f"ЛОГ ОШИБКИ: Игрок '{name_to_delete}' не найден для удаления.")
+        return False
+
+        # 2. Обработка active_player до проверки списка
+    deleted_was_active = (data.get('active_player') == name_to_delete)
+
+    # 3. Проверка: Если игроков не осталось (ФИНАЛЬНЫЙ ШТРИХ)
+    if not data['players']:
+
+        # 3а. Сбрасываем active_player и сохраняем пустой список игроков
+        data['active_player'] = None
+        _save_players_data(data)
+
+        # 3б. Удаляем команду (!!! ВОССТАНОВЛЕННЫЙ КОД !!!)
+        reset_team()
+        print(f"ЛОГ: Последний игрок удален. Команда '{team_name}' распущена.")
+
+    else:
+        # 4. Если игроки остались
+        if deleted_was_active:
+            # Делаем первого игрока в новом списке активным
+            data['active_player'] = data['players'][0]['name']
+
+        _save_players_data(data)  # Сохраняем обновленный список и active_player
+
     return True
-
 
 # Заглушка (как требовалось в game/state.py)
 def save_result(*args, **kwargs):

@@ -1,11 +1,13 @@
 # display/display_menu.py
+
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
 from ui.elements import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
 from ui.handler_tkinter import set_next_scene, get_next_scene
 
 # Новые импорты для работы с идентификацией
-from players.manager import get_current_player_name, save_current_player, get_all_player_names # <--- ДОБАВЛЕН НОВЫЙ ИМПОРТ
+from players.manager import get_current_player_name, save_current_player, get_all_player_names, delete_player # <--- ДОБАВЛЕН ИМПОРТ
 from players.team_manager import get_team_name, save_team_name  # <--- НОВЫЙ ИМПОРТ
 
 root_window = None
@@ -145,6 +147,38 @@ def handle_combobox_selection(event):
         tk.messagebox.showerror("Ошибка", "Не удалось сделать игрока активным.")
 
 
+# display/display_menu.py
+
+# ... (после handle_combobox_selection) ...
+
+def handle_player_delete():
+    """Обработчик кнопки удаления активного игрока."""
+    global root_window
+
+    player_name = get_current_player_name()
+
+    if not player_name:
+        messagebox.showwarning("Предупреждение", "Нет активного игрока для удаления.")
+        return
+
+    # Запрос подтверждения удаления
+    confirm = messagebox.askyesno(  # <--- Исправлено: messagebox
+        "Подтверждение удаления",
+        f"Вы действительно хотите удалить игрока '{player_name}'? Все его результаты будут утеряны!"
+    )
+
+    if confirm:
+        success = delete_player(player_name)
+
+        if success:
+            messagebox.showinfo("Успех", f"Игрок '{player_name}' успешно удален.")  # <--- Исправлено: messagebox
+
+            # Перезапускаем сцену меню, чтобы обновить отображение
+            set_next_scene('menu')
+            if root_window:
+                root_window.destroy()
+        else:
+            messagebox.showerror("Ошибка", "Не удалось удалить игрока.")  # <--- Исправлено: messagebox
 # ----------------- КОНСТРУКТОРЫ СЕКЦИЙ -----------------
 def setup_player_selection_section(parent_frame, team_name):
     """Отображает секцию выбора игрока."""
@@ -245,6 +279,16 @@ def setup_player_selection_section(parent_frame, team_name):
         text=button_text,
         command=handle_player_selection  # Используем общий обработчик для сохранения/активации
     ).pack(side=tk.LEFT, padx=10)
+
+    # --- НОВАЯ СЕКЦИЯ: КНОПКА УДАЛЕНИЯ ---
+    # Показываем кнопку удаления, только если есть активный игрок
+    if current_player_name:
+        ttk.Button(
+            player_frame,
+            text="Удалить Игрока",
+            command=handle_player_delete,
+            style='Danger.TButton'  # Предполагая, что у вас есть такой стиль для красного цвета
+        ).pack(side=tk.LEFT, padx=10)
 
 
 def show_menu():
