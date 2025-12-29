@@ -1,5 +1,5 @@
 {
-    "active_player": "Юсуп",
+    "active_player": "Василиса",
     "players": [
         {
             "name": "Вася",
@@ -25,8 +25,19 @@
         },
         {
             "name": "Юсуп",
-            "active": true,
+            "active": false,
             "created_at": "2025-12-29T08:03:10",
+            "best_game": {},
+            "total": {
+                "games": 0,
+                "moves": 0,
+                "time": 0
+            }
+        },
+        {
+            "name": "Василиса",
+            "active": true,
+            "created_at": "2025-12-29T13:59:24",
             "best_game": {},
             "total": {
                 "games": 0,
