@@ -1,1 +1,4 @@
 # Piatnashka_3.1
+Piatnashka_3.1 is an advanced version of the classic Piatnashka game, designed to provide an engaging and challenging experience for players of all skill levels. This version introduces new features, improved graphics, and enhanced gameplay mechanics to make the game more enjoyable.
+
+Piatnashka_3.1 — это усовершенствованная версия классической игры «Пятнашка», разработанная для того, чтобы обеспечить увлекательный и сложный игровой процесс для игроков всех уровней мастерства. В этой версии представлены новые функции, улучшенная графика и усовершенствованная механика игрового процесса, что делает игру еще более приятной.

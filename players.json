@@ -1,122 +1,38 @@
-[
-    {
-        "name": "Анна",
-        "best_time": null,
-        "best_moves": null,
-        "active": true,
-        "best_game": {
-            "area": 30,
-            "time": 161,
-            "moves": 268,
-            "rating": 0.0006952813571892093,
-            "date": "2025-12-21 03:35:16"
+{
+    "active_player": "Юсуп",
+    "players": [
+        {
+            "name": "Вася",
+            "created_at": "2025-12-29T07:28:45",
+            "best_game": {},
+            "total": {
+                "games": 0,
+                "moves": 0,
+                "time": 0
+            },
+            "active": false
         },
-        "total": {
-            "games": 4,
-            "area": 176,
-            "time": 1564,
-            "moves": 2235,
-            "rating": 5.03498744113928e-05,
-            "best_date": "2025-12-21 03:35:16"
-        }
-    },
-    {
-        "name": "Юрий",
-        "best_time": null,
-        "best_moves": null,
-        "active": false,
-        "best_game": {
-            "area": 16,
-            "time": 33,
-            "moves": 48,
-            "rating": 0.010101010101010102,
-            "date": "2025-12-24 09:06:38"
+        {
+            "name": "Петя",
+            "created_at": "2025-12-29T07:28:57",
+            "best_game": {},
+            "total": {
+                "games": 0,
+                "moves": 0,
+                "time": 0
+            },
+            "active": false
         },
-        "total": {
-            "games": 8,
-            "area": 375,
-            "time": 3207,
-            "moves": 4598,
-            "rating": 2.543099431932621e-05,
-            "best_date": "2025-12-24 09:06:38"
+        {
+            "name": "Юсуп",
+            "active": true,
+            "created_at": "2025-12-29T08:03:10",
+            "best_game": {},
+            "total": {
+                "games": 0,
+                "moves": 0,
+                "time": 0
+            }
         }
-    },
-    {
-        "name": "Мария",
-        "best_time": null,
-        "best_moves": null,
-        "active": false,
-        "best_game": {
-            "area": 16,
-            "time": 65,
-            "moves": 92,
-            "rating": 0.0026755852842809363,
-            "date": "2025-12-26 03:56:53"
-        },
-        "total": {
-            "games": 3,
-            "area": 97,
-            "time": 831,
-            "moves": 1135,
-            "rating": 0.00010284302655364535,
-            "best_date": "2025-12-26 03:56:53"
-        }
-    },
-    {
-        "name": "Вася",
-        "active": false,
-        "best_game": {
-            "area": 16,
-            "time": 68,
-            "moves": 116,
-            "rating": 0.002028397565922921,
-            "date": "2025-12-20 09:51:07"
-        },
-        "total": {
-            "games": 4,
-            "area": 157,
-            "time": 1655,
-            "moves": 2292,
-            "rating": 4.138920084571055e-05,
-            "best_date": "2025-12-20 09:51:07"
-        }
-    },
-    {
-        "name": "Василиса",
-        "active": false,
-        "best_game": {
-            "area": 36,
-            "time": 308,
-            "moves": 405,
-            "rating": 0.0002886002886002886,
-            "date": "2025-12-21 13:28:58"
-        },
-        "total": {
-            "games": 3,
-            "area": 164,
-            "time": 1679,
-            "moves": 2294,
-            "rating": 4.257941970482077e-05,
-            "best_date": "2025-12-21 13:28:58"
-        }
-    },
-    {
-        "name": "Буба",
-        "active": false,
-        "best_game": {
-            "area": 35,
-            "time": 238,
-            "moves": 347,
-            "rating": 0.0004238006441769792,
-            "date": "2025-12-23 15:36:49"
-        },
-        "total": {
-            "games": 3,
-            "area": 135,
-            "time": 1074,
-            "moves": 1511,
-            "rating": 8.318883125238012e-05,
-            "best_date": "2025-12-23 15:36:49"
-        }
-    }
-]
+    ]
+}

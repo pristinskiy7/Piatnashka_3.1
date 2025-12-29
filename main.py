@@ -1,54 +1,51 @@
-# main.py
+# main.py (Обновленный)
 
-import pygame
-from game.state import GameState
-from game.board_draw import  draw_menu
-import ui.events as ui_events
-from  ui.elements import UI_WIDTH_MENU, UI_HEIGHT_MENU
-from settings.manager import load_settings
+import sys
+# Импортируем модули сцен
+from display.display_greetings import show_greetings
+from display.display_instructions import show_instructions
+from display.display_menu import show_menu  # <--- НОВЫЙ ИМПОРТ
+
+# Глобальная переменная для управления текущей сценой
+current_scene = 'greetings'
 
 
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode((UI_WIDTH_MENU, UI_HEIGHT_MENU))
-    pygame.display.set_caption("Пятнашка 3.1")
+    """Главный цикл и менеджер сцен."""
+    global current_scene
 
-    state = GameState()
-    state.start_time = None
+    while current_scene != 'exit':
 
-    # Загружаем сохранённые настройки
-    settings = load_settings()
-    state.team_name = settings.get("team_name", "")
-    state.team_confirmed = bool(state.team_name)  # ← новый флаг
+        if current_scene == 'greetings':
+            print("--- Запуск Сцены: Приветствие ---")
+            current_scene = show_greetings()
 
-    clock = pygame.time.Clock()
-    current_scene = "menu"
-    running = True
+        elif current_scene == 'instructions':
+            print("--- Запуск Сцены: Инструкции ---")
+            current_scene = show_instructions()
 
+        elif current_scene == 'menu':
+            print("--- Запуск Сцены: Меню ---")
+            current_scene = show_menu()  # <--- ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ
 
-    while running:
-        if current_scene == "menu":
-            # обработка событий меню
-            running = ui_events.handle_events(state)
-            # отрисовка меню
-            draw_menu(screen, state)
-            # переход к игре
-            if getattr(state, "game_started", False):
-                current_scene = "game"
+        elif current_scene == 'game':
+            print("--- Запуск Сцены: Игра ---")
+            # current_scene = run_game() # пока не реализовано
+            current_scene = 'results'  # Временно переходим к результатам
 
-        elif current_scene == "game":
-            running = ui_events.handle_events(state)
-            elapsed_sec = (pygame.time.get_ticks() - state.start_time) // 1000 if state.start_time else 0
-            draw_board(screen, state.board, state.moves, elapsed_sec, state)
-            if state.finished:
-                current_scene = "results"
+        elif current_scene == 'results':
+            print("--- Запуск Сцены: Результаты ---")
+            # current_scene = show_results() # пока не реализовано
+            current_scene = 'exit'
 
-        elif current_scene == "results":
-            draw_results(screen, state)
-            # здесь можно добавить кнопку "Новая игра" или "Выход"
+        elif current_scene == 'exit':
+            print("--- Завершение программы ---")
+            break
 
-        pygame.display.flip()
-        clock.tick(60)
+        else:
+            print(f"Ошибка: Неизвестная сцена: {current_scene}. Выход.")
+            break
+
 
 if __name__ == "__main__":
     main()
