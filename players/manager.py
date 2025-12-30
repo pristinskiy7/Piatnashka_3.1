@@ -1,21 +1,12 @@
 # players/manager.py
 
-# players/manager.py (Финальная версия, изолированная от других команд)
 import json
 import os
 import datetime
-# Убедитесь, что вы импортируете обе нужные функции, если reset_team вызывается в delete_player
 from players.team_manager import get_team_name, reset_team
-
 
 PLAYERS_FILE = 'players.json'
 
-# ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ КОМАНДЫ (Временно) -------------------
-# Эти функции нужны для проверки и сброса команды.
-
-
-
-# ----------------------------------------------------------------------------------
 # --- Вспомогательные функции для работы с файлом ---
 
 def _load_players_data():
@@ -57,59 +48,6 @@ def _save_players_data(data):
         print(f"ЛОГ ОШИБКИ: Не удалось сохранить данные игроков: {e}")
         return False
 
-
-def delete_player(name_to_delete):
-    """
-    Удаляет игрока из списка.
-    Если удаляется последний игрок, удаляет команду.
-    """
-    team_name = get_team_name()
-    if not team_name:
-        print("ЛОГ ОШИБКИ: Невозможно удалить игрока без активной команды.")
-        return False
-
-    data = _load_players_data()
-    name_to_delete = name_to_delete.strip()
-
-    initial_count = len(data['players'])
-
-    # 1. Удаление игрока
-    data['players'] = [
-        player
-        for player in data['players']
-        if isinstance(player, dict) and player.get('name') != name_to_delete
-    ]
-
-    if len(data['players']) == initial_count:
-        print(f"ЛОГ ОШИБКИ: Игрок '{name_to_delete}' не найден для удаления.")
-        return False
-
-        # 2. Обработка active_player до проверки списка
-    deleted_was_active = (data.get('active_player') == name_to_delete)
-
-    # 3. Проверка: Если игроков не осталось (ФИНАЛЬНЫЙ ШТРИХ)
-    if not data['players']:
-
-        # 3а. Сбрасываем active_player и сохраняем пустой список игроков
-        data['active_player'] = None
-        _save_players_data(data)
-
-
-
-    else:
-        # 4. Если игроки остались
-        if deleted_was_active:
-            # Делаем первого игрока в новом списке активным
-            data['active_player'] = data['players'][0]['name']
-
-        _save_players_data(data)  # Сохраняем обновленный список и active_player
-
-    return True
-
-
-# --- Основные функции логики ---
-
-# players/manager.py
 
 def get_current_player_name():
     """

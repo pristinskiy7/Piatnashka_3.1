@@ -5,10 +5,17 @@ from tkinter import ttk
 from tkinter import messagebox # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
 from ui.elements import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
 from ui.handler_tkinter import set_next_scene, get_next_scene
-
-# Новые импорты для работы с идентификацией
 from players.manager import get_current_player_name, save_current_player, get_all_player_names, delete_player # <--- ДОБАВЛЕН ИМПОРТ
 from players.team_manager import get_team_name, save_team_name  # <--- НОВЫЙ ИМПОРТ
+# Новые импорты настроек
+from settings.preferences import get_board_preferences, set_board_preferences, MIN_SIZE, MAX_SIZE,DEFAULT_SIZE
+
+# Глобальные переменные для управления состоянием комбобоксов
+size_w_var = None
+size_h_var = None
+w_combobox = None
+h_combobox = None
+
 
 root_window = None
 player_name_var = None
@@ -291,6 +298,161 @@ def setup_player_selection_section(parent_frame, team_name):
         ).pack(side=tk.LEFT, padx=10)
 
 
+# display/display_menu.py
+
+# ... (после других вспомогательных функций) ...
+
+def _validate_and_save_size(dimension_var, is_width):
+    """Общая функция для валидации ручного ввода и сохранения W или H."""
+
+    # 1. Загружаем текущие настройки для сброса в случае ошибки
+    current_prefs = get_board_preferences()
+
+    value_str = dimension_var.get().strip()
+    dimension_name = "Ширина (W)" if is_width else "Высота (H)"
+
+    # 2. Проверяем режим "RANDOM"
+    if value_str.upper() == "RANDOM":
+        w = "RANDOM" if is_width else current_prefs['w']
+        h = current_prefs['h'] if is_width else "RANDOM"
+        set_board_preferences(w, h)
+        return True
+
+    # 3. Валидация числового ввода
+    try:
+        value_int = int(value_str)
+        if MIN_SIZE <= value_int <= MAX_SIZE:
+            # Валидное число, сохраняем
+            w = value_int if is_width else current_prefs['w']
+            h = current_prefs['h'] if is_width else value_int
+            set_board_preferences(w, h)
+            print(f"ЛОГ: Размер {dimension_name} сохранен: {value_int}.")
+            return True
+        else:
+            # Невалидный диапазон: сбрасываем значение в поле
+            messagebox.showerror("Ошибка ввода",
+                                 f"Размер {dimension_name} должен быть целым числом от {MIN_SIZE} до {MAX_SIZE}.")
+            # Сбрасываем поле на предыдущее валидное значение (или 4)
+            prev_val = current_prefs['w'] if is_width else current_prefs['h']
+            if prev_val == "RANDOM":
+                dimension_var.set(str(DEFAULT_SIZE))  # Используем 4, если предыдущее было RANDOM
+            else:
+                dimension_var.set(str(prev_val))
+            return False
+
+    except ValueError:
+        # Не число: сбрасываем значение в поле
+        messagebox.showerror("Ошибка ввода", f"Размер {dimension_name} должен быть целым числом.")
+        # Сбрасываем поле на предыдущее валидное значение (или 4)
+        prev_val = current_prefs['w'] if is_width else current_prefs['h']
+        if prev_val == "RANDOM":
+            dimension_var.set(str(DEFAULT_SIZE))
+        else:
+            dimension_var.set(str(prev_val))
+        return False
+
+
+def _handle_mode_change(combobox, dimension_var, is_width, event):
+    """Обработчик выбора 'Выбрать'/'Случайная' из выпадающего списка."""
+    selected_mode = combobox.get()
+
+    if selected_mode == "Случайная":
+        # Устанавливаем режим RANDOM
+        dimension_var.set("RANDOM")
+        combobox.config(state="readonly")  # Запрещаем ручной ввод
+        _validate_and_save_size(dimension_var, is_width)  # Сохраняем немедленно
+
+    elif selected_mode == "Выбрать":
+        # Возвращаем поле в режим ручного ввода
+        current_prefs = get_board_preferences()
+        last_valid_value = current_prefs['w'] if is_width else current_prefs['h']
+
+        # Если последнее сохраненное значение было RANDOM, ставим дефолт
+        if last_valid_value == "RANDOM":
+            last_valid_value = str(MIN_SIZE)
+
+        dimension_var.set(str(last_valid_value))
+        combobox.config(state="normal")  # Разрешаем ручной ввод
+
+    # Сбрасываем текст комбобокса, чтобы он показывал текущее значение (RANDOM или число)
+    combobox.set(dimension_var.get())
+
+
+# display/display_menu.py
+
+# ... (после _handle_mode_change) ...
+
+def setup_size_selection_section(container_frame):
+    """Отрисовывает секцию выбора размера поля (W и H)."""
+    global size_w_var, size_h_var, w_combobox, h_combobox
+
+    # 1. Загружаем текущие настройки
+    current_prefs = get_board_preferences()
+    current_w = current_prefs['w']
+    current_h = current_prefs['h']
+
+    # 2. Создаем заголовок секции
+    size_label = tk.Label(container_frame, text="📏 Настройки размера поля (4-10):", font=("Arial", 12, "bold"),
+                          bg="#E0E0E0")
+    size_label.pack(pady=(10, 5))
+
+    # 3. Фрейм для размещения W и H рядом
+    size_frame = tk.Frame(container_frame, bg="#E0E0E0")
+    size_frame.pack(pady=5)
+
+    # Настройки Combobox
+    modes = ["Выбрать", "Случайная"]
+
+    # --- ШИРИНА (W) ---
+    tk.Label(size_frame, text="Ширина (W):", bg="#E0E0E0", font=("Arial", 10)).pack(side='left', padx=(20, 5))
+
+    # Инициализация переменных и состояния
+    initial_w_value = str(current_w)
+    initial_w_state = "readonly" if current_w == "RANDOM" else "normal"
+
+    if size_w_var is None:
+        size_w_var = tk.StringVar(size_frame, value=initial_w_value)
+
+    w_combobox = ttk.Combobox(
+        size_frame,
+        textvariable=size_w_var,
+        values=modes,
+        state=initial_w_state,
+        width=10,
+        justify='center',
+        font=("Arial", 11)
+    )
+    w_combobox.pack(side='left', padx=(0, 10))
+
+    # Обработчики событий
+    w_combobox.bind('<<ComboboxSelected>>', lambda event: _handle_mode_change(w_combobox, size_w_var, True, event))
+    w_combobox.bind('<FocusOut>', lambda event: _validate_and_save_size(size_w_var, True))
+
+    # --- ВЫСОТА (H) ---
+    tk.Label(size_frame, text="Высота (H):", bg="#E0E0E0", font=("Arial", 10)).pack(side='left', padx=(10, 5))
+
+    # Инициализация переменных и состояния
+    initial_h_value = str(current_h)
+    initial_h_state = "readonly" if current_h == "RANDOM" else "normal"
+
+    if size_h_var is None:
+        size_h_var = tk.StringVar(size_frame, value=initial_h_value)
+
+    h_combobox = ttk.Combobox(
+        size_frame,
+        textvariable=size_h_var,
+        values=modes,
+        state=initial_h_state,
+        width=10,
+        justify='center',
+        font=("Arial", 11)
+    )
+    h_combobox.pack(side='left', padx=(0, 20))
+
+    # Обработчики событий
+    h_combobox.bind('<<ComboboxSelected>>', lambda event: _handle_mode_change(h_combobox, size_h_var, False, event))
+    h_combobox.bind('<FocusOut>', lambda event: _validate_and_save_size(size_h_var, False))
+
 def show_menu():
     """Создает и отображает главное меню с логикой проверки команды."""
     global root_window, current_team_name
@@ -325,8 +487,13 @@ def show_menu():
     id_frame.pack(pady=20)
 
     if current_team_name:
-        # Если команда ЕСТЬ: показываем ее название и поле выбора игрока
+        # ------------------- 2. СЕКЦИЯ ВЫБОРА ИГРОКА -------------------
+        # Этот вызов должен остаться!
         setup_player_selection_section(id_frame, current_team_name)
+
+        # ------------------- 3. СЕКЦИЯ ВЫБОРА РАЗМЕРА ПОЛЯ -------------------
+        # ЭТОТ ВЫЗОВ МЫ ДОБАВЛЯЕМ
+        setup_size_selection_section(id_frame)
     else:
         # Если команды НЕТ: показываем поле для ее создания
         setup_team_creation_section(id_frame)

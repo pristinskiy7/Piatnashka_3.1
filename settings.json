@@ -1,7 +1,4 @@
 {
-    "width_mode": "set",
-    "height_mode": "set",
-    "width_value": 4,
-    "height_value": 4,
-    "team_name": "вася"
+    "board_w": "RANDOM",
+    "board_h": "RANDOM"
 }
