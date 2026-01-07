@@ -11,6 +11,10 @@
 │   │   ├── def close_scene_and_switch(next_scene_name):                    # Устанавливает следующую сцену и закрывает текущее окно Tkinter.
 │   │   └── def show_instructions():                                        # Создает и отображает окно инструкций.
 │   ├── display_menu.py                                                     # Отображение меню
+│   │   ├── size_w_var = None
+│   │   ├── size_h_var = None
+│   │   ├── w_combobox = None
+│   │   ├── h_combobox = None
 │   │   ├── root_window = None                                              # Хранит объект главного окна Tkinter
 │   │   ├── player_name_var = None
 │   │   ├── team_name_var = None                                            # Переменная для хранения имени новой команды
@@ -24,6 +28,9 @@
 │   │   │                                                                     Если выбрано "Добавить нового игрока" - очищаем поле и ждем ввода.
 │   │   ├── def handle_player_delete():                                     # Обработчик кнопки удаления активного игрока."""
 │   │   ├── def setup_player_selection_section(parent_frame, team_name):    # Отображает секцию выбора игрока.
+│   │   ├── def _validate_and_save_size(dimension_var, is_width):           # Общая функция для валидации ручного ввода и сохранения W или H."""
+│   │   ├── def _handle_mode_change(combobox, dimension_var, is_width, event):   # Обработчик выбора 'Выбрать'/'Случайная' из выпадающего списка."""
+│   │   ├── def setup_size_selection_section(container_frame):              # Отрисовывает секцию выбора размера поля (W и H)."""
 │   │   └── def show_menu():                                                # Создает и отображает главное меню с логикой проверки команды."""
 │   └── display_results.py                                                  # Отображение результатов
 │
@@ -58,6 +65,15 @@
 ├── settings/                                                               # настройки игры 
 │	├── config.py                                                           # глобальные параметры (цвета, размеры окна)
 │   └── preferences.py                                                      # пользовательские настройки│
+│       ├── PREFERENCES_FILE = 'settings.json'
+│       ├── MIN_SIZE = 4
+│       ├── MAX_SIZE = 10
+│       ├── DEFAULT_SIZE = 4                                                # <--- Добавьте эту константу, если её нет
+│       ├── def _load_preferences():                                        # Загружает настройки из файла или возвращает настройки по умолчанию."""
+│       ├── def _save_preferences(data):                                    # Сохраняет настройки в файл settings.json."""
+│       ├── def get_board_preferences():                                    # Возвращает текущие настройки размера поля (W, H).
+│       │                                                                     W и H могут быть int (4-10) или строкой 'RANDOM'."""
+│       └── def set_board_preferences(w_value, h_value):                    # Сохраняет новые настройки размера поля (W и H)."""
 │
 ├── ui/                                                                     # интерфейс и события
 │   ├── elements.py                                                         # вспомогательные элементы UI (кнопки, поля ввода), константы

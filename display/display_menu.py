@@ -10,6 +10,10 @@ from players.team_manager import get_team_name, save_team_name  # <--- НОВЫ�
 # Новые импорты настроек
 from settings.preferences import get_board_preferences, set_board_preferences, MIN_SIZE, MAX_SIZE,DEFAULT_SIZE
 
+import random
+from game.game_loop import start_game_loop # <<< НОВЫЙ ИМПОРТ PYGAME
+
+
 # Глобальные переменные для управления состоянием комбобоксов
 size_w_var = None
 size_h_var = None
@@ -186,6 +190,81 @@ def handle_player_delete():
                 root_window.destroy()
         else:
             messagebox.showerror("Ошибка", "Не удалось удалить игрока.")  # <--- Исправлено: messagebox
+
+
+# display/display_menu.py (ОКОНЧАТЕЛЬНАЯ ВЕРСИЯ start_game)
+
+import random
+from game.game_loop import start_game_loop  # Убедиться, что импорт есть!
+
+
+def start_game(root):
+    """
+    Обрабатывает нажатие кнопки "Начать игру".
+    Принудительно сохраняет настройки W/H, а затем запускает Pygame.
+    """
+    global size_w_var, size_h_var, w_combobox, h_combobox
+
+    # ----------------------------------------------------
+    # ШАГ 1: ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ И СОХРАНЕНИЕ
+    # Берем текущий текст из виджета и вызываем валидацию.
+    # ----------------------------------------------------
+
+    # --- Синхронизация и сохранение W ---
+    if w_combobox and size_w_var:
+        current_w_text = w_combobox.get()
+        size_w_var.set(current_w_text)
+        _validate_and_save_size(size_w_var, True)
+
+        # --- Синхронизация и сохранение H ---
+    if h_combobox and size_h_var:
+        current_h_text = h_combobox.get()
+        size_h_var.set(current_h_text)
+        _validate_and_save_size(size_h_var, False)
+
+    # Даем Tkinter микропаузу на обработку сохранения файла
+    root.update_idletasks()
+
+    # ----------------------------------------------------
+    # ШАГ 2: ПРОВЕРКА И ЗАПУСК
+    # ----------------------------------------------------
+
+    active_player = get_current_player_name()
+    if not active_player:
+        messagebox.showerror("Ошибка", "Необходимо выбрать активного игрока.")
+        return
+
+    # Получение настроек поля (теперь они гарантированно свежие)
+    prefs = get_board_preferences()
+    w_setting = prefs['w']
+    h_setting = prefs['h']
+
+    # Определение финальных W и H
+    MIN_VAL = MIN_SIZE
+    MAX_VAL = MAX_SIZE
+
+    final_w = w_setting
+    if w_setting == "RANDOM":
+        final_w = random.randint(MIN_VAL, MAX_VAL)
+
+    final_h = h_setting
+    if h_setting == "RANDOM":
+        final_h = random.randint(MIN_VAL, MAX_VAL)
+
+    if final_w < MIN_VAL or final_h < MIN_VAL:
+        messagebox.showerror("Ошибка", f"Финальный размер поля ({final_w}x{final_h}) слишком мал.")
+        return
+
+    # Вызов главного цикла Pygame
+    print("--- 🔵 [A] Готовимся к вызову start_game_loop... ---")
+    print(f"ЛОГ: Проверка перед Pygame: {active_player} ({final_w}x{final_h})")
+    save_current_player(active_player)
+
+    start_game_loop(root, active_player, final_w, final_h)
+
+    print("--- 🔴 [B] Вызов start_game_loop завершился. ---")
+
+
 # ----------------- КОНСТРУКТОРЫ СЕКЦИЙ -----------------
 def setup_player_selection_section(parent_frame, team_name):
     """Отображает секцию выбора игрока."""
@@ -427,6 +506,7 @@ def setup_size_selection_section(container_frame):
     # Обработчики событий
     w_combobox.bind('<<ComboboxSelected>>', lambda event: _handle_mode_change(w_combobox, size_w_var, True, event))
     w_combobox.bind('<FocusOut>', lambda event: _validate_and_save_size(size_w_var, True))
+    w_combobox.bind('<Return>', lambda event: _validate_and_save_size(size_w_var, True))  # <<< НОВАЯ ПРИВЯЗКА
 
     # --- ВЫСОТА (H) ---
     tk.Label(size_frame, text="Высота (H):", bg="#E0E0E0", font=("Arial", 10)).pack(side='left', padx=(10, 5))
@@ -452,6 +532,8 @@ def setup_size_selection_section(container_frame):
     # Обработчики событий
     h_combobox.bind('<<ComboboxSelected>>', lambda event: _handle_mode_change(h_combobox, size_h_var, False, event))
     h_combobox.bind('<FocusOut>', lambda event: _validate_and_save_size(size_h_var, False))
+    h_combobox.bind('<Return>', lambda event: _validate_and_save_size(size_h_var, False))  # <<< НОВАЯ ПРИВЯЗКА
+
 
 def show_menu():
     """Создает и отображает главное меню с логикой проверки команды."""
@@ -506,8 +588,8 @@ def show_menu():
     # 1. Начать Игру
     ttk.Button(
         button_frame,
-        text="Начать Игру (4x4)",
-        command=lambda: close_scene_and_switch('game'),
+        text="▶️ Начать Игру ",
+        command=lambda: start_game(root_window),  # <<< ИЗМЕНЕНО! Вызываем start_game
         width=25
     ).pack(pady=15)
 
