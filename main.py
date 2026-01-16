@@ -1,6 +1,6 @@
 # main.py (Обновленный)
 
-import sys
+
 # Импортируем модули сцен
 from display.display_greetings import show_greetings
 from display.display_instructions import show_instructions
@@ -43,7 +43,7 @@ def main():
             break
 
         else:
-            print(f"Ошибка: Неизвестная сцена: {current_scene}. Выход.")
+            print(f"Ошибка: Неизвестная555git сцена: {current_scene}. Выход.")
             break
 
 

@@ -1,4 +1,4 @@
 {
-    "board_w": "RANDOM",
-    "board_h": "RANDOM"
+    "board_w": 4,
+    "board_h": 4
 }

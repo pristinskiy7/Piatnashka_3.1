@@ -2,8 +2,9 @@
 
 import tkinter as tk
 from tkinter import ttk
-from ui.elements import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
 from ui.handler_tkinter import set_next_scene, get_next_scene
+from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
+
 
 # Хранит объект главного окна Tkinter
 root_window = None

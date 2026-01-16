@@ -2,10 +2,9 @@
 
 import tkinter as tk
 from tkinter import ttk
-# Импортируем общие константы
-from ui.elements import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, COLOR_BACKGROUND
-# Импортируем обработчик для переключения сцены
 from ui.handler_tkinter import set_next_scene, get_next_scene
+from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
+
 
 # Хранит объект главного окна Tkinter
 root_window = None

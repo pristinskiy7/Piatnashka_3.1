@@ -3,15 +3,11 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
-from ui.elements import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
 from ui.handler_tkinter import set_next_scene, get_next_scene
 from players.manager import get_current_player_name, save_current_player, get_all_player_names, delete_player # <--- ДОБАВЛЕН ИМПОРТ
 from players.team_manager import get_team_name, save_team_name  # <--- НОВЫЙ ИМПОРТ
-# Новые импорты настроек
 from settings.preferences import get_board_preferences, set_board_preferences, MIN_SIZE, MAX_SIZE,DEFAULT_SIZE
-
-import random
-from game.game_loop import start_game_loop # <<< НОВЫЙ ИМПОРТ PYGAME
+from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
 
 
 # Глобальные переменные для управления состоянием комбобоксов
@@ -158,10 +154,6 @@ def handle_combobox_selection(event):
         tk.messagebox.showerror("Ошибка", "Не удалось сделать игрока активным.")
 
 
-# display/display_menu.py
-
-# ... (после handle_combobox_selection) ...
-
 def handle_player_delete():
     """Обработчик кнопки удаления активного игрока."""
     global root_window
@@ -192,7 +184,6 @@ def handle_player_delete():
             messagebox.showerror("Ошибка", "Не удалось удалить игрока.")  # <--- Исправлено: messagebox
 
 
-# display/display_menu.py (ОКОНЧАТЕЛЬНАЯ ВЕРСИЯ start_game)
 
 import random
 from game.game_loop import start_game_loop  # Убедиться, что импорт есть!

@@ -1,7 +1,6 @@
 Пятнашка_3.1/
 │
 │── display/               
-│   ├── display_game.py                                                     # Отображение игрвого поля
 │   ├── display_greetings.py                                                # Отображение приветствия
 │   │   ├── root_window = None                                              # Хранит объект главного окна Tkinter
 │   │   ├── def start_scene(next_scene_name):                               # Обработчик нажатия кнопки: устанавливает следующую сцену и закрывает окно.
@@ -10,37 +9,87 @@
 │   │   ├── root_window = None                                              # Хранит объект главного окна Tkinter
 │   │   ├── def close_scene_and_switch(next_scene_name):                    # Устанавливает следующую сцену и закрывает текущее окно Tkinter.
 │   │   └── def show_instructions():                                        # Создает и отображает окно инструкций.
-│   ├── display_menu.py                                                     # Отображение меню
-│   │   ├── size_w_var = None
-│   │   ├── size_h_var = None
-│   │   ├── w_combobox = None
-│   │   ├── h_combobox = None
-│   │   ├── root_window = None                                              # Хранит объект главного окна Tkinter
-│   │   ├── player_name_var = None
-│   │   ├── team_name_var = None                                            # Переменная для хранения имени новой команды
-│   │   ├── current_team_name = None                                        # Фактическое имя существующей команды
-│   │   ├── def handle_create_team():                                       # Обработчик кнопки: сохраняет новое имя команды и перезагружает меню. 
-│   │   ├── def close_scene_and_switch(next_scene_name):                    # Устанавливает следующую сцену и закрывает текущее окно Tkinter.
-│   │   ├── def setup_team_creation_section(parent_frame):                  # Отображает секцию для ввода и создания новой команды.
-│   │   ├── def handle_player_selection(event=None):                        # Обработчик для кнопки 'Начать Игру' (если выбрано имя) или 'Добавить Игрока'.
-│   │   ├── def handle_combobox_selection(event):                           # Обработчик, который срабатывает при выборе имени из Combobox.
-│   │   │                                                                     Если выбрано имя игрока - делаем его активным.
-│   │   │                                                                     Если выбрано "Добавить нового игрока" - очищаем поле и ждем ввода.
-│   │   ├── def handle_player_delete():                                     # Обработчик кнопки удаления активного игрока."""
-│   │   ├── def setup_player_selection_section(parent_frame, team_name):    # Отображает секцию выбора игрока.
-│   │   ├── def _validate_and_save_size(dimension_var, is_width):           # Общая функция для валидации ручного ввода и сохранения W или H."""
-│   │   ├── def _handle_mode_change(combobox, dimension_var, is_width, event):   # Обработчик выбора 'Выбрать'/'Случайная' из выпадающего списка."""
-│   │   ├── def setup_size_selection_section(container_frame):              # Отрисовывает секцию выбора размера поля (W и H)."""
-│   │   └── def show_menu():                                                # Создает и отображает главное меню с логикой проверки команды."""
-│   └── display_results.py                                                  # Отображение результатов
+│   └── display_menu.py                                                     # Отображение меню
+│       ├── size_w_var = None
+│       ├── size_h_var = None
+│       ├── w_combobox = None
+│       ├── h_combobox = None
+│       ├── root_window = None                                              # Хранит объект главного окна Tkinter
+│       ├── player_name_var = None
+│       ├── team_name_var = None                                            # Переменная для хранения имени новой команды
+│       ├── current_team_name = None                                        # Фактическое имя существующей команды
+│       ├── def handle_create_team():                                       # Обработчик кнопки: сохраняет новое имя команды и перезагружает меню. 
+│       ├── def close_scene_and_switch(next_scene_name):                    # Устанавливает следующую сцену и закрывает текущее окно Tkinter.
+│       ├── def setup_team_creation_section(parent_frame):                  # Отображает секцию для ввода и создания новой команды.
+│       ├── def handle_player_selection(event=None):                        # Обработчик для кнопки 'Начать Игру' (если выбрано имя) или 'Добавить Игрока'.
+│       ├── def handle_combobox_selection(event):                           # Обработчик, который срабатывает при выборе имени из Combobox.
+│       │                                                                     Если выбрано имя игрока - делаем его активным.
+│       │                                                                     Если выбрано "Добавить нового игрока" - очищаем поле и ждем ввода.
+│       ├── def handle_player_delete():                                     # Обработчик кнопки удаления активного игрока."""
+│       ├── def start_game(root):                                           # Обрабатывает нажатие кнопки "Начать игру". Принудительно сохраняет настройки W/H, 
+│       │                                                                              а затем запускает Pygame.  
+│       ├── def setup_player_selection_section(parent_frame, team_name):    # Отображает секцию выбора игрока.
+│       ├── def _validate_and_save_size(dimension_var, is_width):           # Общая функция для валидации ручного ввода и сохранения W или H."""
+│       ├── def _handle_mode_change(combobox, dimension_var, is_width, event):   # Обработчик выбора 'Выбрать'/'Случайная' из выпадающего списка."""
+│       ├── def setup_size_selection_section(container_frame):              # Отрисовывает секцию выбора размера поля (W и H)."""
+│       └── def show_menu():                                                # Создает и отображает главное меню с логикой проверки команды."""
 │
 ├── game/                                                                   # игровая логика 
+│   ├── constants.py
+│   │   ├── INFO_PANEL_HEIGHT = 60
+│   │   ├── INDICATOR_HEIGHT = 60
+│   │   ├── BOARD_AREA_SIZE = 800                                           # Фиксированная область 600x600 для поля
+│   │   ├── BOARD_AREA_START_Y = INFO_PANEL_HEIGHT + INDICATOR_HEIGHT       # = 120
+│   │   ├── FPS = 60
+│   │   ├── GAME_TITLE = "Пятнашка"
+│   │   ├── WHITE = (255, 255, 255)
+│   │   ├── BLACK = (0, 0, 0)
+│   │   ├── BACKGROUND_COLOR = (240, 240, 240)
+│   │   ├── TILE_COLOR = (150, 150, 255)                                    # Цвет плитки (светло-голубой)
+│   │   ├── HIGHLIGHT_COLOR = (255, 200, 0)                                 # Цвет для подсветки
+│   │   ├── MARGIN = 10                                                     # Отступ от краев окна
+│   │   └── TILE_BORDER = 2                                                 # Ширина рамки вокруг плитки
+│   ├── game_loop.py
+│   │   ├── WINDOW_WIDTH = 1200                                             # <-- Обновлено
+│   │   ├── WINDOW_HEIGHT = 800                                             # <-- Обновлено
+│   │   ├── GAME_TITLE = "Пятнашка: Игра началась"
+│   │   ├── FPS = 60
+│   │   ├── INDICATOR_PADDING_X = 10
+│   │   ├── INDICATOR_INNER_WIDTH = WINDOW_WIDTH - 2 * INDICATOR_PADDING_X  # 1180
+│   │   ├── LOG_SCALE_POINTS = [0.01, 0.1, 1.0, 10.0]                       # Основные метки между 0 и N (площадью)
+│   │   ├── INFO_PANEL_HEIGHT = 60
+│   │   ├── INDICATOR_HEIGHT = 60
+│   │   ├── BOARD_AREA_SIZE = 600                                           # Фиксированная область 600x600 для поля
+│   │   ├── BOARD_AREA_START_Y = INFO_PANEL_HEIGHT + INDICATOR_HEIGHT       # = 120
+│   │   ├── WHITE = (255, 255, 255)
+│   │   ├── BLACK = (0, 0, 0)
+│   │   ├── BACKGROUND_COLOR = (220, 220, 220)                              # Светло-серый фон
+│   │   ├── TILE_COLOR = (150, 150, 255)                                    # Цвет плитки
+│   │   ├── TILE_BORDER = 2                                                 # Ширина рамки
+│   │   ├── MARGIN = 10                                                     # Отступ
+│   │   ├── TILE_COLOR_SOLVED = (100, 255, 100)                             # Ярко-зеленый цвет
+│   │   ├── TILE_COLOR = (150, 150, 255)                                    # Цвет плитки (оригинальный)
+│   │   ├── def draw_info_panel(screen, state, font):                       # Отрисовывает 6 информационных блоков в верхней части окна (Зона А)."""
+│   │   ├── def draw_indicator_panel(screen, state):                        # Отрисовывает индикатор коэффициента K (Зона Б) по строго логарифмической шкале (база 10)."""
+│   │   ├── def draw_board(screen, state, TILE_SIZE, start_x, start_y, font):   # Отрисовывает игровое поле и плитки (Зона В)."""
+│   │   └── def start_game_loop(menu_root, player_name, board_w, board_h):
 │   ├── logic.py                                                            # Счетчик ходов, таймер, статусы, флаги
+│   │   ├── def is_solved(state):                                           # Проверяет, выиграна ли игра: все плитки на своих местах и 0 в правом нижнем углу.
+│   │   ├── def get_inversions_count(flat_tiles):                           # Считает количество инверсий в линеаризованном списке плиток (исключая 0).
+│   │   ├── def get_target_pos(tile_value, board_w, board_h):               # Повертає цільову (фінальну) позицію (r, c) для даної плитки. Пуста плитка (0) знаходиться в правому нижньому куті.
+│   │   ├── def calculate_initial_S(tiles, board_w, board_h):               # Рассчитывает початкову складність (S) на основі суми Манхеттенської відстані та кількості інверсій (з вагою 3). S використовується як нормалізаційний фактор.
+│   │   ├── def is_solvable(board_w, board_h, flat_tiles):                  #  Проверяет решаемость головоломки N-Puzzle (Пятнашки)."""
+│   │   ├── def is_tile_in_place(tile_value, row, col, board_w, board_h):   # Проверяет, стоит ли плитка на своем конечном месте в упорядоченном поле.Пустая ячейка (0) считается "на своем месте", только если она в самом конце.
+│   │   ├── def shuffle_board():                                            # Перемешивает плитки, гарантируя решаемую раскладку, сбрасывает счетчики и запускает игру.
+│   │   ├── def get_empty_tile_pos(tiles, board_w, board_h):                # Находит координаты пустой ячейки (0)."""
+│   │   ├── def calculate_k(state):                                         # Рассчитывает коэффициент эффективности K по логарифмической шкале. K = (1000 * W * H) / (Time * Moves)
+│   │   └── def make_move(tile_row, tile_col):                              # Обрабатывает ход, сдвигает ряд/столбец и проверяет условие победы.
 │   └── state.py                                                            # логика ходов, проверка завершения, проверка решаемости
+│       ├── _GAME_STATE =                                                   # Глобальная переменная для хранения состояния
+│       ├── def init_game_state(player_name, board_w, board_h):             # Заполняет глобальное состояние игры начальными параметрами и создает упорядоченное поле.
+│       ├── def get_state():                                                # Возвращает текущее состояние игры."""
+│       └── def set_state(key, value):                                      # Обновляет значение в состоянии игры."""
 │
-├── history/                                                                # история игр
-│   ├── manager.py                                                          # сохранение/загрузка истории
-│   └── records.py                                                          # таблица рекордов, статистика
 │
 ├── players/                                                                # работа с игроками
 │   ├── manager.py                                                          # выбор игрока, создание нового
@@ -64,6 +113,9 @@
 │       └── def reset_team():                                               # Удаляет файл team.json, распуская команду."""
 ├── settings/                                                               # настройки игры 
 │	├── config.py                                                           # глобальные параметры (цвета, размеры окна)
+│   │   ├── WINDOW_WIDTH = 1200                                             # Ширина окна приложения в пикселях
+│   │   ├── WINDOW_HEIGHT = 1000                                            # Высота окна приложения в пикселях
+│   │   └── WINDOW_TITLE = "Игра 'Суперпятнашки'"                           # Заголовок окна приложения
 │   └── preferences.py                                                      # пользовательские настройки│
 │       ├── PREFERENCES_FILE = 'settings.json'
 │       ├── MIN_SIZE = 4
@@ -76,16 +128,6 @@
 │       └── def set_board_preferences(w_value, h_value):                    # Сохраняет новые настройки размера поля (W и H)."""
 │
 ├── ui/                                                                     # интерфейс и события
-│   ├── elements.py                                                         # вспомогательные элементы UI (кнопки, поля ввода), константы
-│   │   ├── WINDOW_WIDTH = 800
-│   │   ├── WINDOW_HEIGHT = 600
-│   │   ├── WINDOW_TITLE = "Игра 'Суперпятнашки'"
-│   │   └── COLOR_BACKGROUND = "#f0f0f0"
-│   │
-│   ├── events_pygame.py                                                    # Ожидание событий (кнопки, ввод) Tkinter
-│   ├── events_tkinter.py                                                   # Обработка событий Tkinter (например, клик "Начать игру")
-│   │
-│   ├── handler_pygame.py                                                   # Ожидание событий (клика плитки, закрытие окна) Pygame
 │   └── handler_tkinter.py                                                  # Обработка событий Pygame (например, обработка хода)
 │       ├── NEXT_SCENE = 'exit'                                             # Переменная для хранения следующей сцены, которую вернет Tkinter
 │       ├── def set_next_scene(scene_name):                                 # Устанавливает имя следующей сцены, куда должен перейти main.py.

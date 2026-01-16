@@ -1,10 +1,6 @@
 # game/constants.py
 
-# ... (другие константы) ...
 
-# Размеры окна Pygame (если еще не определены)
-WINDOW_WIDTH = 1000
-WINDOW_HEIGHT = 720
 # --- ВЫСОТЫ ЗОН ---
 INFO_PANEL_HEIGHT = 60
 INDICATOR_HEIGHT = 60
