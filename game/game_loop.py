@@ -2,13 +2,12 @@
 
 import pygame
 import sys
-from tkinter import messagebox
-from game.state import get_state, init_game_state, set_state
 import math
+from tkinter import messagebox
 from game.logic import shuffle_board, make_move, is_tile_in_place
+from game.state import get_state, init_game_state, set_state
 from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
 # ----------------------------------------------------
-
 
 FPS = 60
 

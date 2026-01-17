@@ -2,57 +2,74 @@
 │
 │── display/               
 │   ├── display_greetings.py                                                # Отображение приветствия
+│   │   ├── import tkinter as tk
+│   │   ├── from tkinter import ttk
+│   │   ├── from display.handler_tkinter import set_next_scene, get_next_scene
+│   │   ├── from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
+│   │   │
 │   │   ├── root_window = None                                              # Хранит объект главного окна Tkinter
 │   │   ├── def start_scene(next_scene_name):                               # Обработчик нажатия кнопки: устанавливает следующую сцену и закрывает окно.
 │   │   └── def show_greetings():                                           # Создает и отображает окно приветствия.
+│   │
 │   ├── display_instructions.py                                             # Отображение инструкции
+│   │   ├── import tkinter as tk
+│   │   ├── from tkinter import ttk
+│   │   ├── from display.handler_tkinter import set_next_scene, get_next_scene
+│   │   ├── from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
+│   │   │
 │   │   ├── root_window = None                                              # Хранит объект главного окна Tkinter
 │   │   ├── def close_scene_and_switch(next_scene_name):                    # Устанавливает следующую сцену и закрывает текущее окно Tkinter.
 │   │   └── def show_instructions():                                        # Создает и отображает окно инструкций.
-│   └── display_menu.py                                                     # Отображение меню
-│       ├── size_w_var = None
-│       ├── size_h_var = None
-│       ├── w_combobox = None
-│       ├── h_combobox = None
-│       ├── root_window = None                                              # Хранит объект главного окна Tkinter
-│       ├── player_name_var = None
-│       ├── team_name_var = None                                            # Переменная для хранения имени новой команды
-│       ├── current_team_name = None                                        # Фактическое имя существующей команды
-│       ├── def handle_create_team():                                       # Обработчик кнопки: сохраняет новое имя команды и перезагружает меню. 
-│       ├── def close_scene_and_switch(next_scene_name):                    # Устанавливает следующую сцену и закрывает текущее окно Tkinter.
-│       ├── def setup_team_creation_section(parent_frame):                  # Отображает секцию для ввода и создания новой команды.
-│       ├── def handle_player_selection(event=None):                        # Обработчик для кнопки 'Начать Игру' (если выбрано имя) или 'Добавить Игрока'.
-│       ├── def handle_combobox_selection(event):                           # Обработчик, который срабатывает при выборе имени из Combobox.
-│       │                                                                     Если выбрано имя игрока - делаем его активным.
-│       │                                                                     Если выбрано "Добавить нового игрока" - очищаем поле и ждем ввода.
-│       ├── def handle_player_delete():                                     # Обработчик кнопки удаления активного игрока."""
-│       ├── def start_game(root):                                           # Обрабатывает нажатие кнопки "Начать игру". Принудительно сохраняет настройки W/H, 
-│       │                                                                              а затем запускает Pygame.  
-│       ├── def setup_player_selection_section(parent_frame, team_name):    # Отображает секцию выбора игрока.
-│       ├── def _validate_and_save_size(dimension_var, is_width):           # Общая функция для валидации ручного ввода и сохранения W или H."""
-│       ├── def _handle_mode_change(combobox, dimension_var, is_width, event):   # Обработчик выбора 'Выбрать'/'Случайная' из выпадающего списка."""
-│       ├── def setup_size_selection_section(container_frame):              # Отрисовывает секцию выбора размера поля (W и H)."""
-│       └── def show_menu():                                                # Создает и отображает главное меню с логикой проверки команды."""
+│   │
+│   ├── display_menu.py                                                     # Отображение меню
+│   │   ├── import tkinter as tk
+│   │   ├── from tkinter import ttk
+│   │   ├── from tkinter import messagebox # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
+│   │   ├── from display.handler_tkinter import set_next_scene, get_next_scene
+│   │   ├── from players.manager import get_current_player_name, save_current_player, get_all_player_names, delete_player # <--- ДОБАВЛЕН ИМПОРТ
+│   │   ├── from players.team_manager import get_team_name, save_team_name  # <--- НОВЫЙ ИМПОРТ
+│   │   ├── from settings.preferences import get_board_preferences, set_board_preferences, MIN_SIZE, MAX_SIZE,DEFAULT_SIZE
+│   │   ├── from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
+│   │   │
+│   │   ├── size_w_var = None
+│   │   ├── size_h_var = None
+│   │   ├── w_combobox = None
+│   │   ├── h_combobox = None
+│   │   ├── root_window = None                                              # Хранит объект главного окна Tkinter
+│   │   ├── player_name_var = None
+│   │   ├── team_name_var = None                                            # Переменная для хранения имени новой команды
+│   │   ├── current_team_name = None                                        # Фактическое имя существующей команды
+│   │   ├── def handle_create_team():                                       # Обработчик кнопки: сохраняет новое имя команды и перезагружает меню. 
+│   │   ├── def close_scene_and_switch(next_scene_name):                    # Устанавливает следующую сцену и закрывает текущее окно Tkinter.
+│   │   ├── def setup_team_creation_section(parent_frame):                  # Отображает секцию для ввода и создания новой команды.
+│   │   ├── def handle_player_selection(event=None):                        # Обработчик для кнопки 'Начать Игру' (если выбрано имя) или 'Добавить Игрока'.
+│   │   ├── def handle_combobox_selection(event):                           # Обработчик, который срабатывает при выборе имени из Combobox.
+│   │   │                                                                     Если выбрано имя игрока - делаем его активным.
+│   │   │                                                                     Если выбрано "Добавить нового игрока" - очищаем поле и ждем ввода.
+│   │   ├── def handle_player_delete():                                     # Обработчик кнопки удаления активного игрока."""
+│   │   ├── def start_game(root):                                           # Обрабатывает нажатие кнопки "Начать игру". Принудительно сохраняет настройки W/H, 
+│   │   │                                                                              а затем запускает Pygame.  
+│   │   ├── def setup_player_selection_section(parent_frame, team_name):    # Отображает секцию выбора игрока.
+│   │   ├── def _validate_and_save_size(dimension_var, is_width):           # Общая функция для валидации ручного ввода и сохранения W или H."""
+│   │   ├── def _handle_mode_change(combobox, dimension_var, is_width, event):   # Обработчик выбора 'Выбрать'/'Случайная' из выпадающего списка."""
+│   │   ├── def setup_size_selection_section(container_frame):              # Отрисовывает секцию выбора размера поля (W и H)."""
+│   │   └── def show_menu():                                                # Создает и отображает главное меню с логикой проверки команды."""
+│   │
+│   └── handler_tkinter.py                                                  # Обработка событий Pygame (например, обработка хода)
+│       ├── NEXT_SCENE = 'exit'                                             # Переменная для хранения следующей сцены, которую вернет Tkinter
+│       ├── def set_next_scene(scene_name):                                 # Устанавливает имя следующей сцены, куда должен перейти main.py.
+│       └── def get_next_scene():                                           # Возвращает установленное имя следующей сцены.
 │
 ├── game/                                                                   # игровая логика 
-│   ├── constants.py
-│   │   ├── INFO_PANEL_HEIGHT = 60
-│   │   ├── INDICATOR_HEIGHT = 60
-│   │   ├── BOARD_AREA_SIZE = 800                                           # Фиксированная область 600x600 для поля
-│   │   ├── BOARD_AREA_START_Y = INFO_PANEL_HEIGHT + INDICATOR_HEIGHT       # = 120
-│   │   ├── FPS = 60
-│   │   ├── GAME_TITLE = "Пятнашка"
-│   │   ├── WHITE = (255, 255, 255)
-│   │   ├── BLACK = (0, 0, 0)
-│   │   ├── BACKGROUND_COLOR = (240, 240, 240)
-│   │   ├── TILE_COLOR = (150, 150, 255)                                    # Цвет плитки (светло-голубой)
-│   │   ├── HIGHLIGHT_COLOR = (255, 200, 0)                                 # Цвет для подсветки
-│   │   ├── MARGIN = 10                                                     # Отступ от краев окна
-│   │   └── TILE_BORDER = 2                                                 # Ширина рамки вокруг плитки
 │   ├── game_loop.py
-│   │   ├── WINDOW_WIDTH = 1200                                             # <-- Обновлено
-│   │   ├── WINDOW_HEIGHT = 800                                             # <-- Обновлено
-│   │   ├── GAME_TITLE = "Пятнашка: Игра началась"
+│   │   ├── import pygame
+│   │   ├── import sys
+│   │   ├── import math
+│   │   ├── from tkinter import messagebox
+│   │   ├── from game.logic import shuffle_board, make_move, is_tile_in_place
+│   │   ├── from game.state import get_state, init_game_state, set_state
+│   │   ├── from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
+│   │   │
 │   │   ├── FPS = 60
 │   │   ├── INDICATOR_PADDING_X = 10
 │   │   ├── INDICATOR_INNER_WIDTH = WINDOW_WIDTH - 2 * INDICATOR_PADDING_X  # 1180
@@ -74,6 +91,9 @@
 │   │   ├── def draw_board(screen, state, TILE_SIZE, start_x, start_y, font):   # Отрисовывает игровое поле и плитки (Зона В)."""
 │   │   └── def start_game_loop(menu_root, player_name, board_w, board_h):
 │   ├── logic.py                                                            # Счетчик ходов, таймер, статусы, флаги
+│   │   ├── import random
+│   │   ├── from game.state import get_state, set_state
+│   │   │
 │   │   ├── def is_solved(state):                                           # Проверяет, выиграна ли игра: все плитки на своих местах и 0 в правом нижнем углу.
 │   │   ├── def get_inversions_count(flat_tiles):                           # Считает количество инверсий в линеаризованном списке плиток (исключая 0).
 │   │   ├── def get_target_pos(tile_value, board_w, board_h):               # Повертає цільову (фінальну) позицію (r, c) для даної плитки. Пуста плитка (0) знаходиться в правому нижньому куті.
@@ -90,9 +110,13 @@
 │       ├── def get_state():                                                # Возвращает текущее состояние игры."""
 │       └── def set_state(key, value):                                      # Обновляет значение в состоянии игры."""
 │
-│
 ├── players/                                                                # работа с игроками
 │   ├── manager.py                                                          # выбор игрока, создание нового
+│   │   ├── import json
+│   │   ├── import os
+│   │   ├── import datetime
+│   │   ├── from players.team_manager import get_team_name, reset_team
+│   │   │
 │   │   ├── PLAYERS_FILE = 'players.json'
 │   │   ├── def _load_players_data():                                       # Загружает данные игроков и активного игрока, гарантируя структуру по умолчанию."""
 │   │   ├── def _save_players_data(data):                                   # Сохраняет данные игроков в players.json."""
@@ -103,8 +127,11 @@
 │   │   ├── def delete_player(name_to_delete):                              # Удаляет игрока из списка.
 │   │   │                                                                     Если удаляется последний игрок, удаляет команду.
 │   │   └── def save_result(*args, **kwargs):
-│   ├── stats.py                                                            # накопленные результаты
+│   │
 │   └── team_manager.py
+│       ├── import json
+│       ├── import os
+│       │
 │       ├── TEAM_FILE = 'team.json'  
 │       ├── TEAM_KEY = 'team_name'
 │       ├── def get_team_name():                                            # Загружает название команды из team.json. Возвращает None, если файла нет, он поврежден 
@@ -117,6 +144,9 @@
 │   │   ├── WINDOW_HEIGHT = 1000                                            # Высота окна приложения в пикселях
 │   │   └── WINDOW_TITLE = "Игра 'Суперпятнашки'"                           # Заголовок окна приложения
 │   └── preferences.py                                                      # пользовательские настройки│
+│       ├── import json
+│       ├── import os
+│       │
 │       ├── PREFERENCES_FILE = 'settings.json'
 │       ├── MIN_SIZE = 4
 │       ├── MAX_SIZE = 10
@@ -127,13 +157,11 @@
 │       │                                                                     W и H могут быть int (4-10) или строкой 'RANDOM'."""
 │       └── def set_board_preferences(w_value, h_value):                    # Сохраняет новые настройки размера поля (W и H)."""
 │
-├── ui/                                                                     # интерфейс и события
-│   └── handler_tkinter.py                                                  # Обработка событий Pygame (например, обработка хода)
-│       ├── NEXT_SCENE = 'exit'                                             # Переменная для хранения следующей сцены, которую вернет Tkinter
-│       ├── def set_next_scene(scene_name):                                 # Устанавливает имя следующей сцены, куда должен перейти main.py.
-│       └── def get_next_scene():                                           # Возвращает установленное имя следующей сцены.
-│
 ├── main.py                                                                 # главный цикл, менеджер сцен (Greetings → instructions → menu → game → results)
+│	├── from display.display_greetings import show_greetings
+│	├── from display.display_instructions import show_instructions
+│	├── from display.display_menu import show_menu  # <--- НОВЫЙ ИМПОРТ
+│   │
 │   ├── current_scene = 'greetings'
 │   └── def main():                                                         # Главный цикл и менеджер сцен."""
 ├── players.json                                                            # Игроки и их статистика

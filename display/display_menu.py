@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
-from ui.handler_tkinter import set_next_scene, get_next_scene
+from display.handler_tkinter import set_next_scene, get_next_scene
 from players.manager import get_current_player_name, save_current_player, get_all_player_names, delete_player # <--- ДОБАВЛЕН ИМПОРТ
 from players.team_manager import get_team_name, save_team_name  # <--- НОВЫЙ ИМПОРТ
 from settings.preferences import get_board_preferences, set_board_preferences, MIN_SIZE, MAX_SIZE,DEFAULT_SIZE

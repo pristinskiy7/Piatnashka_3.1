@@ -1,8 +1,8 @@
 # game/logic.py
 
-
-from game.state import get_state, set_state
 import random
+from game.state import get_state, set_state
+
 
 
 

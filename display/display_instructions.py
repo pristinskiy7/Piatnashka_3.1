@@ -2,7 +2,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from ui.handler_tkinter import set_next_scene, get_next_scene
+from display.handler_tkinter import set_next_scene, get_next_scene
 from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
 
 
