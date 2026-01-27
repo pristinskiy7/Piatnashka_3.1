@@ -1,10 +1,40 @@
 # game/logic.py
 
+import math
 import random
 from game.state import get_state, set_state
 
 
+def calculate_e():
+    """
+    Рассчитывает коэффициент эффективности E на основе начальной сложности S,
+    количества ходов и затраченного времени.
+    """
+    state = get_state()
 
+    # Если игра еще не началась или ходов нет - E = 0
+    if not state['is_playing'] or state['moves_count'] == 0:
+        return 0.0
+
+    s_initial = state.get('S_initial', 1)
+    moves = state['moves_count']
+    time_spent = state['time_elapsed']
+
+    # 1. Эффективность по ходам (E_moves)
+    # Идеально, если ходов сделано примерно S_initial / 3.
+    # Коэффициент 1.5 — это штрафной множитель сложности.
+    e_moves = s_initial / (moves * 1.5)
+
+    # 2. Эффективность по времени (E_time)
+    # Предполагаем, что 1 ход в секунду — это "норма".
+    e_time = s_initial / (max(time_spent, 1.0) * 10)
+
+    # 3. Итоговый коэффициент E (нормализованный до 1000)
+    # Используем среднее геометрическое для баланса
+    e_final = 100 * math.sqrt(e_moves * e_time)
+
+    # Ограничиваем сверху для красоты (хотя профи могут выбить и больше)
+    return round(min(e_final, 1000.0), 1)
 
 def is_solved(state):
     """
@@ -215,12 +245,12 @@ def get_empty_tile_pos(tiles, board_w, board_h):
                 return r, c
     return -1, -1  # Не должно происходить
 
-
+"""
 def calculate_k(state):
-    """
+
     Рассчитывает коэффициент эффективности K по логарифмической шкале.
     K = (1000 * W * H) / (Time * Moves)
-    """
+    
     moves = state['moves_count']
     time = state['time_elapsed']
     board_w = state['board_w']
@@ -243,8 +273,7 @@ def calculate_k(state):
 
     return round(k_value, 4)
 
-
-# game/logic.py (Обновленная функция make_move)
+"""
 
 def make_move(tile_row, tile_col):
     """
@@ -305,18 +334,13 @@ def make_move(tile_row, tile_col):
     if move_made:
         set_state('moves_count', state['moves_count'] + 1)
 
-        # Расчет и обновление K
-        k_value = calculate_k(state)
-        set_state('coeff_k', k_value)
 
-        set_state('tiles', tiles)
 
         # 4. ПРОВЕРКА ПОБЕДЫ
         if is_solved(state):
             set_state('is_playing', False)
             print(f"--- 🎉 ПОБЕДА! 🎉 ---")
-            print(f"Финальный K: {k_value:.4f}")
-        else:
-            print(f"ЛОГ ИГРЫ: Ряд/столбец сдвинут. Ходов: {state['moves_count']}. K: {k_value}")
+
+
     else:
         print("ЛОГ ИГРЫ: Клик не привел к сдвигу (не на одной линии с 0).")
