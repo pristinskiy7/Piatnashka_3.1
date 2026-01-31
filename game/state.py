@@ -5,30 +5,32 @@ _GAME_STATE = {
     'player_name': None,
     'board_w': 0,
     'board_h': 0,
-    'tiles': [],  # Массив 2D, содержащий числа 1..N-1 и 0 (пустая клетка)
+    'tiles': [],  # Массив 2D (числа 1..N-1 и 0)
     'moves_count': 0,  # Количество сделанных ходов
     'time_elapsed': 0.0,  # Прошедшее время
 
-    # --- НОВЫЕ КЛЮЧИ ДЛЯ E-КОЭФФИЦИЕНТА ---
-    'S_initial': 1,  # Початкова складність поля (Min: 1)
-    'coeff_e': 0.0,  # Коефіцієнт ефективності E (замена coeff_k)
-    # -------------------------------------
+    # --- НОВАЯ ЭКОНОМИКА (XP SYSTEM) ---
+    'md_initial': 0,  # Начальная дистанция Манхэттена (базовая сложность)
+    'coeff_k': 0.0,  # Текущий прогноз XP за эту игру
+    'total_xp': 0,  # Общий накопленный опыт игрока (из файла профиля)
+    'rank_title': "Новичок",  # Текущее звание игрока
+    # -----------------------------------
 
     'game_active': False,
-    'is_playing': False  # Флаг: True, если таймер запущен и можно ходить
+    'is_playing': False  # True, если таймер запущен
 }
 
 
-def init_game_state(player_name, board_w, board_h):
+def init_game_state(player_name, board_w, board_h, total_xp=0, rank_title="Новичок"):
     """
-    Заполняет глобальное состояние игры начальными параметрами и создает упорядоченное поле.
+    Инициализирует состояние игры.
+    Теперь принимает данные о прогрессе игрока для отображения ранга.
     """
     global _GAME_STATE
 
-    # 1. Создание упорядоченного массива плиток (N x M)
+    # 1. Создание упорядоченного массива плиток
     board_tiles = []
     tile_count = 1
-
     for r in range(board_h):
         row = []
         for c in range(board_w):
@@ -36,28 +38,29 @@ def init_game_state(player_name, board_w, board_h):
                 row.append(tile_count)
                 tile_count += 1
             else:
-                # Последняя ячейка - пустая (0)
                 row.append(0)
         board_tiles.append(row)
 
-    # 2. Обновление глобального состояния
+    # 2. Обновление состояния
     _GAME_STATE['player_name'] = player_name
     _GAME_STATE['board_w'] = board_w
     _GAME_STATE['board_h'] = board_h
     _GAME_STATE['tiles'] = board_tiles
 
-    # 3. Сброс статистики
+    # Сброс текущей статистики
     _GAME_STATE['moves_count'] = 0
     _GAME_STATE['time_elapsed'] = 0.0
+    _GAME_STATE['md_initial'] = 0
+    _GAME_STATE['coeff_k'] = 0.0
 
-    # Инициализация новых ключей
-    _GAME_STATE['S_initial'] = 1
-    _GAME_STATE['coeff_e'] = 0.0
+    # Данные прогресса
+    _GAME_STATE['total_xp'] = total_xp
+    _GAME_STATE['rank_title'] = rank_title
 
     _GAME_STATE['game_active'] = True
-    _GAME_STATE['is_playing'] = False  # Игра начнется только по клику на Таймер
+    _GAME_STATE['is_playing'] = False
 
-    print(f"ЛОГ: Состояние игры инициализировано для {player_name} ({board_w}x{board_h}).")
+    print(f"ЛОГ: Состояние инициализировано. Игрок: {player_name}, Ранг: {rank_title}")
 
 
 def get_state():
@@ -68,4 +71,5 @@ def get_state():
 def set_state(key, value):
     """Обновляет значение в состоянии игры."""
     global _GAME_STATE
-    _GAME_STATE[key] = value
+    if key in _GAME_STATE:
+        _GAME_STATE[key] = value

@@ -1,437 +1,202 @@
 # game/game_loop.py
-# game/game_loop.py
+
 
 import pygame
-import sys
-import math
-from tkinter import messagebox
 
-# Импорты внутренней логики
-from game.logic import shuffle_board, make_move, is_tile_in_place, calculate_e
+from game.logic import (
+    shuffle_board, make_move, is_tile_in_place,
+    calculate_current_xp, is_solved, get_rank_info
+)
 from game.state import get_state, init_game_state, set_state
 from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
+from players.manager import save_result
 
-# --- КОНСТАНТЫ ОКНА И ДИЗАЙНА ---
+# --- КОНСТАНТЫ ---
 FPS = 60
-INFO_PANEL_HEIGHT = 60
+INFO_PANEL_HEIGHT = 80
 INDICATOR_HEIGHT = 60
-INDICATOR_PADDING_X = 10
-INDICATOR_INNER_WIDTH = WINDOW_WIDTH - 2 * INDICATOR_PADDING_X
-
-BOARD_AREA_SIZE = 600  # Фиксированная область 600x600 для поля
+BOARD_AREA_SIZE = 600
 BOARD_AREA_START_Y = INFO_PANEL_HEIGHT + INDICATOR_HEIGHT
-
-# --- ЦВЕТА ---
+# Цвета
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BACKGROUND_COLOR = (220, 220, 220)
+BOARD_BG_COLOR = (80, 80, 80)
 TILE_COLOR = (150, 150, 255)
 TILE_COLOR_SOLVED = (100, 255, 100)
-TILE_BORDER = 2
+GOLD = (255, 215, 0)
 
 
-# ----------------------------------------------------
-# ФУНКЦИИ ОТРИСОВКИ
-# ----------------------------------------------------
+# --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ОТРИСОВКИ ---
 
 def draw_info_panel(screen, state, font):
-    """Отрисовывает верхнюю информационную панель (Зона А)."""
-    panel_rect = pygame.Rect(0, 0, WINDOW_WIDTH, INFO_PANEL_HEIGHT)
-    pygame.draw.rect(screen, (200, 200, 255), panel_rect)
-    pygame.draw.line(screen, BLACK, (0, INFO_PANEL_HEIGHT), (WINDOW_WIDTH, INFO_PANEL_HEIGHT), 2)
+    pygame.draw.rect(screen, (180, 180, 240), (0, 0, WINDOW_WIDTH, INFO_PANEL_HEIGHT))
+    rank = state.get('rank_title', 'Новичок')
+    player = state.get('player_name', 'Player')
 
-    # Используем 'coeff_k' для отображения, так как этот ключ в твоем стейте
-    info_data = [
-        f"Игрок: {state['player_name']}",
-        f"Ширина: {state['board_w']}",
-        f"Высота: {state['board_h']}",
-        f"Время: {state.get('time_elapsed', 0.0):.0f} сек.",
-        f"Ходов: {state.get('moves_count', 0)}",
-        f"E: {state.get('coeff_k', 0):.1f}"
-    ]
+    txt = font.render(f"[{rank}] {player}", True, BLACK)
+    screen.blit(txt, (20, 10))
 
-    num_items = len(info_data)
-    item_width = WINDOW_WIDTH // num_items
+    stats = f"Время: {int(state.get('time_elapsed', 0))}с | Ходы: {state.get('moves_count', 0)}"
+    stats_surf = font.render(stats, True, (50, 50, 50))
+    screen.blit(stats_surf, (20, 45))
+
     is_playing = state.get('is_playing', False)
-
-    # Подсветка Таймера, если игра не начата
-    if not is_playing:
-        timer_rect = pygame.Rect(3 * item_width, 0, item_width, INFO_PANEL_HEIGHT)
-        pygame.draw.rect(screen, (255, 230, 150), timer_rect, 0)
-        pygame.draw.rect(screen, (200, 100, 0), timer_rect, 3)
-
-    for i, text in enumerate(info_data):
-        x_start = i * item_width
-        text_surf = font.render(text, True, BLACK)
-        text_rect = text_surf.get_rect(center=(x_start + item_width // 2, INFO_PANEL_HEIGHT // 2))
-        screen.blit(text_surf, text_rect)
-        if i < num_items - 1:
-            pygame.draw.line(screen, BLACK, (x_start + item_width, 0), (x_start + item_width, INFO_PANEL_HEIGHT), 1)
+    btn_rect = pygame.Rect(WINDOW_WIDTH - 160, 10, 140, 60)
+    pygame.draw.rect(screen, (255, 230, 150) if not is_playing else (150, 255, 150), btn_rect, border_radius=5)
+    pygame.draw.rect(screen, BLACK, btn_rect, 2, border_radius=5)
+    btn_txt = font.render("СТАРТ" if not is_playing else "ЗАНОВО", True, BLACK)
+    screen.blit(btn_txt, btn_txt.get_rect(center=btn_rect.center))
 
 
 def draw_indicator_panel(screen, state):
-    """Отрисовывает индикатор эффективности (Зона Б)."""
     rect = pygame.Rect(0, INFO_PANEL_HEIGHT, WINDOW_WIDTH, INDICATOR_HEIGHT)
-    pygame.draw.rect(screen, (230, 230, 230), rect)
-    pygame.draw.line(screen, BLACK, (0, BOARD_AREA_START_Y), (WINDOW_WIDTH, BOARD_AREA_START_Y), 2)
+    pygame.draw.rect(screen, (235, 235, 235), rect)
+    font_small = pygame.font.Font(None, 28)
 
-    font = pygame.font.Font(None, 36)
+    predicted_xp = state.get('coeff_k', 0)
+    xp_text = f"Прогноз награды: {int(predicted_xp)} XP"
+    xp_surf = font_small.render(xp_text, True, BLACK)
+    screen.blit(xp_surf, (WINDOW_WIDTH // 2 - xp_surf.get_width() // 2, INFO_PANEL_HEIGHT + 10))
 
-    # Расчет полоски индикатора (на основе шкалы 0-1000)
-    e_value = state.get('coeff_k', 0.0)
-    normalized_e = min(1.0, max(0.0, e_value / 1000.0))
-    indicator_width = normalized_e * INDICATOR_INNER_WIDTH
+    md_initial = max(state.get('md_initial', 1), 1)
+    moves = max(state.get('moves_count', 0), 1)
+    accuracy = min(1.0, md_initial / moves)
 
-    # Цвет: от красного (0) к зеленому (1000)
-    color = (int(255 * (1 - normalized_e)), int(255 * normalized_e), 0)
+    padding_x = 40
+    bar_w = WINDOW_WIDTH - (padding_x * 2)
+    bg_bar = pygame.Rect(padding_x, INFO_PANEL_HEIGHT + 38, bar_w, 10)
+    pygame.draw.rect(screen, (200, 200, 200), bg_bar, border_radius=5)
 
-    # Рисуем полосу
-    k_rect = pygame.Rect(INDICATOR_PADDING_X, INFO_PANEL_HEIGHT + 10, indicator_width, INDICATOR_HEIGHT - 20)
     if state.get('is_playing', False):
-        pygame.draw.rect(screen, color, k_rect)
-
-    pygame.draw.rect(screen, BLACK,
-                     (INDICATOR_PADDING_X, INFO_PANEL_HEIGHT + 10, INDICATOR_INNER_WIDTH, INDICATOR_HEIGHT - 20), 1)
-
-    # Текст значения
-    current_e_text = f"Эффективность: {e_value:.1f} / 1000"
-    text_surf = font.render(current_e_text, True, BLACK)
-    text_rect = text_surf.get_rect(center=(WINDOW_WIDTH // 2, INFO_PANEL_HEIGHT + INDICATOR_HEIGHT // 2))
-    screen.blit(text_surf, text_rect)
+        color = (100, 150, 255) if accuracy < 0.8 else GOLD
+        fill_w = int(bar_w * accuracy)
+        pygame.draw.rect(screen, color, (padding_x, INFO_PANEL_HEIGHT + 38, fill_w, 10), border_radius=5)
 
 
-def draw_board(screen, state, TILE_SIZE, start_x, start_y, font):
-    """Отрисовывает игровое поле (Зона В)."""
-    board = state['tiles']
-    board_w = state['board_w']
-    board_h = state['board_h']
+def draw_victory_screen(screen, state, font):
+    overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 200))
+    screen.blit(overlay, (0, 0))
 
-    # Рамка поля
-    full_board_rect = pygame.Rect(start_x - TILE_BORDER, start_y - TILE_BORDER,
-                                  (TILE_SIZE * board_w) + TILE_BORDER * 2,
-                                  (TILE_SIZE * board_h) + TILE_BORDER * 2)
-    pygame.draw.rect(screen, BLACK, full_board_rect, TILE_BORDER)
+    card = pygame.Rect(WINDOW_WIDTH // 2 - 200, WINDOW_HEIGHT // 2 - 150, 400, 300)
+    pygame.draw.rect(screen, WHITE, card, border_radius=15)
+    pygame.draw.rect(screen, GOLD, card, 5, border_radius=15)
 
-    for row in range(board_h):
-        for col in range(board_w):
-            tile_value = board[row][col]
-            x, y = start_x + col * TILE_SIZE, start_y + row * TILE_SIZE
+    title = pygame.font.Font(None, 50).render("ГОТОВО!", True, (0, 120, 0))
+    screen.blit(title, title.get_rect(center=(WINDOW_WIDTH // 2, card.top + 50)))
 
-            if tile_value != 0:
-                # Цвет зависит от того, на своем ли месте плитка
-                color = TILE_COLOR_SOLVED if is_tile_in_place(tile_value, row, col, board_w, board_h) else TILE_COLOR
+    # Используем текущий total_xp из состояния для прогресс-бара
+    level, xp_in, xp_req, progress, rank_name = get_rank_info(state.get('total_xp', 0))
+    bar_rect = pygame.Rect(card.left + 50, card.top + 150, 300, 30)
+    pygame.draw.rect(screen, (220, 220, 220), bar_rect, border_radius=10)
+    pygame.draw.rect(screen, (50, 150, 255), (bar_rect.x, bar_rect.y, int(bar_rect.w * progress), bar_rect.h),
+                     border_radius=10)
 
-                pygame.draw.rect(screen, color, (x, y, TILE_SIZE, TILE_SIZE))
-                pygame.draw.rect(screen, BLACK, (x, y, TILE_SIZE, TILE_SIZE), TILE_BORDER)
-
-                text_surf = font.render(str(tile_value), True, BLACK)
-                text_rect = text_surf.get_rect(center=(x + TILE_SIZE // 2, y + TILE_SIZE // 2))
-                screen.blit(text_surf, text_rect)
-            else:
-                pygame.draw.rect(screen, BACKGROUND_COLOR, (x, y, TILE_SIZE, TILE_SIZE))
-                pygame.draw.rect(screen, BLACK, (x, y, TILE_SIZE, TILE_SIZE), TILE_BORDER)
+    lvl_txt = font.render(f"Уровень {level}: {rank_name}", True, BLACK)
+    screen.blit(lvl_txt, (bar_rect.left, bar_rect.top - 35))
 
 
-# ----------------------------------------------------
-# ГЛАВНЫЙ ЦИКЛ
-# ----------------------------------------------------
+# --- ОСНОВНОЙ ЦИКЛ ---
 
 def start_game_loop(menu_root, player_name, board_w, board_h):
+    # 1. Инициализация состояния
     init_game_state(player_name, board_w, board_h)
+
+    # 2. АВТО-СТАРТ: Сразу генерируем раскладку
+    shuffle_board()
+
     menu_root.withdraw()
 
-    try:
-        pygame.init()
-        screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        pygame.display.set_caption(WINDOW_TITLE)
-        clock = pygame.time.Clock()
-        font = pygame.font.Font(None, 36)
-    except Exception as e:
-        messagebox.showerror("Ошибка Pygame", f"Критический сбой: {e}")
-        pygame.quit()
-        menu_root.deiconify()
-        return
+    pygame.init()
+    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+    pygame.display.set_caption(WINDOW_TITLE)
 
-    # Расчет размеров
+    screen.fill(BACKGROUND_COLOR)
+    pygame.display.flip()
+
+    clock = pygame.time.Clock()
+    font = pygame.font.Font(None, 32)
+
     TILE_SIZE = min(BOARD_AREA_SIZE // board_w, BOARD_AREA_SIZE // board_h)
-    BOARD_START_X = (WINDOW_WIDTH - (TILE_SIZE * board_w)) // 2
-    BOARD_START_Y = BOARD_AREA_START_Y + (BOARD_AREA_SIZE - (TILE_SIZE * board_h)) // 2
+    OFF_X = (WINDOW_WIDTH - (TILE_SIZE * board_w)) // 2
+    OFF_Y = BOARD_AREA_START_Y + (BOARD_AREA_SIZE - (TILE_SIZE * board_h)) // 2
 
-    last_time = pygame.time.get_ticks()
     running = True
+    already_saved = False  # Контроль однократной записи
 
     while running:
-        # Расчет времени
-        current_time = pygame.time.get_ticks()
-        delta_time = (current_time - last_time) / 1000.0
-        last_time = current_time
-
+        dt = clock.tick(FPS) / 1000.0
         state = get_state()
         is_playing = state.get('is_playing', False)
 
-        # --- ОБНОВЛЕНИЕ СОСТОЯНИЯ ---
         if is_playing:
-            # Обновляем время
-            new_time = state.get('time_elapsed', 0.0) + delta_time
-            set_state('time_elapsed', new_time)
+            set_state('time_elapsed', state.get('time_elapsed', 0.0) + dt)
+            set_state('coeff_k', calculate_current_xp())
+            already_saved = False  # Сбрасываем, когда началась новая игра
 
-            # Обновляем коэффициент эффективности (ТОТ САМЫЙ МОТОР)
-            set_state('coeff_k', calculate_e())
-
-        # Обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                running = False
-
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                mouse_x, mouse_y = event.pos
-
-                # Клик по таймеру (Старт)
-                if not is_playing:
-                    item_width = WINDOW_WIDTH // 6
-                    timer_rect = pygame.Rect(3 * item_width, 0, item_width, INFO_PANEL_HEIGHT)
-                    if timer_rect.collidepoint(mouse_x, mouse_y):
-                        shuffle_board()
-                        last_time = pygame.time.get_ticks()
-
-                # Клик по доске (Ход)
+                mx, my = event.pos
+                btn_rect = pygame.Rect(WINDOW_WIDTH - 160, 10, 140, 60)
+                if btn_rect.collidepoint(mx, my):
+                    shuffle_board()
                 elif is_playing:
-                    if mouse_x >= BOARD_START_X and mouse_y >= BOARD_START_Y:
-                        col = (mouse_x - BOARD_START_X) // TILE_SIZE
-                        row = (mouse_y - BOARD_START_Y) // TILE_SIZE
-                        if 0 <= row < board_h and 0 <= col < board_w:
-                            make_move(row, col)
+                    c = (mx - OFF_X) // TILE_SIZE
+                    r = (my - OFF_Y) // TILE_SIZE
+                    if 0 <= r < board_h and 0 <= c < board_w:
+                        make_move(r, c)
 
-        # Отрисовка
+        # --- ЛОГИКА СОХРАНЕНИЯ ПОБЕДЫ ---
+        if not is_playing and state.get('moves_count', 0) > 0:
+            if is_solved(state) and not already_saved:
+                # Фиксируем данные
+                f_moves = state.get('moves_count', 0)
+                f_time = int(state.get('time_elapsed', 0))
+                f_xp = int(state.get('coeff_k', 0))
+
+                # Сохраняем в JSON
+                save_result(f_moves, f_time, f_xp, (board_w, board_h))
+
+                # Обновляем локальный state для красоты полоски уровня
+                new_total = state.get('total_xp', 0) + f_xp
+                set_state('total_xp', new_total)
+
+                already_saved = True  # Запираем замок
+
+        # --- ОТРИСОВКА ---
         screen.fill(BACKGROUND_COLOR)
+
+        board_full_w, board_full_h = board_w * TILE_SIZE, board_h * TILE_SIZE
+        board_rect = pygame.Rect(OFF_X, OFF_Y, board_full_w, board_full_h)
+        pygame.draw.rect(screen, BOARD_BG_COLOR, board_rect)
+        pygame.draw.rect(screen, BLACK, board_rect, 4)
+
+        tiles = state.get('tiles', [])
+        if tiles:
+            for r in range(board_h):
+                for c in range(board_w):
+                    val = tiles[r][c]
+                    if val != 0:
+                        correct = is_tile_in_place(val, r, c, board_w, board_h)
+                        color = TILE_COLOR_SOLVED if correct else TILE_COLOR
+                        rect = (OFF_X + c * TILE_SIZE, OFF_Y + r * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                        pygame.draw.rect(screen, color, rect)
+                        pygame.draw.rect(screen, BLACK, rect, 2)
+                        t_surf = font.render(str(val), True, BLACK)
+                        screen.blit(t_surf,
+                                    t_surf.get_rect(center=(rect[0] + TILE_SIZE // 2, rect[1] + TILE_SIZE // 2)))
+
         draw_info_panel(screen, state, font)
         draw_indicator_panel(screen, state)
-        draw_board(screen, state, TILE_SIZE, BOARD_START_X, BOARD_START_Y, font)
+
+        if not is_playing and state.get('moves_count', 0) > 0:
+            if is_solved(state):
+                draw_victory_screen(screen, state, font)
 
         pygame.display.flip()
-        clock.tick(FPS)
 
     pygame.quit()
-    sys.exit()
-
-
-# game/game_loop.py
-
-import pygame
-import sys
-import math
-from tkinter import messagebox
-
-# Импорты внутренней логики
-from game.logic import shuffle_board, make_move, is_tile_in_place, calculate_e
-from game.state import get_state, init_game_state, set_state
-from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
-
-# --- КОНСТАНТЫ ОКНА И ДИЗАЙНА ---
-FPS = 60
-INFO_PANEL_HEIGHT = 60
-INDICATOR_HEIGHT = 60
-INDICATOR_PADDING_X = 10
-INDICATOR_INNER_WIDTH = WINDOW_WIDTH - 2 * INDICATOR_PADDING_X
-
-BOARD_AREA_SIZE = 600  # Фиксированная область 600x600 для поля
-BOARD_AREA_START_Y = INFO_PANEL_HEIGHT + INDICATOR_HEIGHT
-
-# --- ЦВЕТА ---
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-BACKGROUND_COLOR = (220, 220, 220)
-TILE_COLOR = (150, 150, 255)
-TILE_COLOR_SOLVED = (100, 255, 100)
-TILE_BORDER = 2
-
-
-# ----------------------------------------------------
-# ФУНКЦИИ ОТРИСОВКИ
-# ----------------------------------------------------
-
-def draw_info_panel(screen, state, font):
-    """Отрисовывает верхнюю информационную панель (Зона А)."""
-    panel_rect = pygame.Rect(0, 0, WINDOW_WIDTH, INFO_PANEL_HEIGHT)
-    pygame.draw.rect(screen, (200, 200, 255), panel_rect)
-    pygame.draw.line(screen, BLACK, (0, INFO_PANEL_HEIGHT), (WINDOW_WIDTH, INFO_PANEL_HEIGHT), 2)
-
-    # Используем 'coeff_k' для отображения, так как этот ключ в твоем стейте
-    info_data = [
-        f"Игрок: {state['player_name']}",
-        f"Ширина: {state['board_w']}",
-        f"Высота: {state['board_h']}",
-        f"Время: {state.get('time_elapsed', 0.0):.0f} сек.",
-        f"Ходов: {state.get('moves_count', 0)}",
-        f"E: {state.get('coeff_k', 0):.1f}"
-    ]
-
-    num_items = len(info_data)
-    item_width = WINDOW_WIDTH // num_items
-    is_playing = state.get('is_playing', False)
-
-    # Подсветка Таймера, если игра не начата
-    if not is_playing:
-        timer_rect = pygame.Rect(3 * item_width, 0, item_width, INFO_PANEL_HEIGHT)
-        pygame.draw.rect(screen, (255, 230, 150), timer_rect, 0)
-        pygame.draw.rect(screen, (200, 100, 0), timer_rect, 3)
-
-    for i, text in enumerate(info_data):
-        x_start = i * item_width
-        text_surf = font.render(text, True, BLACK)
-        text_rect = text_surf.get_rect(center=(x_start + item_width // 2, INFO_PANEL_HEIGHT // 2))
-        screen.blit(text_surf, text_rect)
-        if i < num_items - 1:
-            pygame.draw.line(screen, BLACK, (x_start + item_width, 0), (x_start + item_width, INFO_PANEL_HEIGHT), 1)
-
-
-def draw_indicator_panel(screen, state):
-    """Отрисовывает индикатор эффективности (Зона Б)."""
-    rect = pygame.Rect(0, INFO_PANEL_HEIGHT, WINDOW_WIDTH, INDICATOR_HEIGHT)
-    pygame.draw.rect(screen, (230, 230, 230), rect)
-    pygame.draw.line(screen, BLACK, (0, BOARD_AREA_START_Y), (WINDOW_WIDTH, BOARD_AREA_START_Y), 2)
-
-    font = pygame.font.Font(None, 36)
-
-    # Расчет полоски индикатора (на основе шкалы 0-1000)
-    e_value = state.get('coeff_k', 0.0)
-    normalized_e = min(1.0, max(0.0, e_value / 1000.0))
-    indicator_width = normalized_e * INDICATOR_INNER_WIDTH
-
-    # Цвет: от красного (0) к зеленому (1000)
-    color = (int(255 * (1 - normalized_e)), int(255 * normalized_e), 0)
-
-    # Рисуем полосу
-    k_rect = pygame.Rect(INDICATOR_PADDING_X, INFO_PANEL_HEIGHT + 10, indicator_width, INDICATOR_HEIGHT - 20)
-    if state.get('is_playing', False):
-        pygame.draw.rect(screen, color, k_rect)
-
-    pygame.draw.rect(screen, BLACK,
-                     (INDICATOR_PADDING_X, INFO_PANEL_HEIGHT + 10, INDICATOR_INNER_WIDTH, INDICATOR_HEIGHT - 20), 1)
-
-    # Текст значения
-    current_e_text = f"Эффективность: {e_value:.1f} / 1000"
-    text_surf = font.render(current_e_text, True, BLACK)
-    text_rect = text_surf.get_rect(center=(WINDOW_WIDTH // 2, INFO_PANEL_HEIGHT + INDICATOR_HEIGHT // 2))
-    screen.blit(text_surf, text_rect)
-
-
-def draw_board(screen, state, TILE_SIZE, start_x, start_y, font):
-    """Отрисовывает игровое поле (Зона В)."""
-    board = state['tiles']
-    board_w = state['board_w']
-    board_h = state['board_h']
-
-    # Рамка поля
-    full_board_rect = pygame.Rect(start_x - TILE_BORDER, start_y - TILE_BORDER,
-                                  (TILE_SIZE * board_w) + TILE_BORDER * 2,
-                                  (TILE_SIZE * board_h) + TILE_BORDER * 2)
-    pygame.draw.rect(screen, BLACK, full_board_rect, TILE_BORDER)
-
-    for row in range(board_h):
-        for col in range(board_w):
-            tile_value = board[row][col]
-            x, y = start_x + col * TILE_SIZE, start_y + row * TILE_SIZE
-
-            if tile_value != 0:
-                # Цвет зависит от того, на своем ли месте плитка
-                color = TILE_COLOR_SOLVED if is_tile_in_place(tile_value, row, col, board_w, board_h) else TILE_COLOR
-
-                pygame.draw.rect(screen, color, (x, y, TILE_SIZE, TILE_SIZE))
-                pygame.draw.rect(screen, BLACK, (x, y, TILE_SIZE, TILE_SIZE), TILE_BORDER)
-
-                text_surf = font.render(str(tile_value), True, BLACK)
-                text_rect = text_surf.get_rect(center=(x + TILE_SIZE // 2, y + TILE_SIZE // 2))
-                screen.blit(text_surf, text_rect)
-            else:
-                pygame.draw.rect(screen, BACKGROUND_COLOR, (x, y, TILE_SIZE, TILE_SIZE))
-                pygame.draw.rect(screen, BLACK, (x, y, TILE_SIZE, TILE_SIZE), TILE_BORDER)
-
-
-# ----------------------------------------------------
-# ГЛАВНЫЙ ЦИКЛ
-# ----------------------------------------------------
-
-def start_game_loop(menu_root, player_name, board_w, board_h):
-    init_game_state(player_name, board_w, board_h)
-    menu_root.withdraw()
-
-    try:
-        pygame.init()
-        screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        pygame.display.set_caption(WINDOW_TITLE)
-        clock = pygame.time.Clock()
-        font = pygame.font.Font(None, 36)
-    except Exception as e:
-        messagebox.showerror("Ошибка Pygame", f"Критический сбой: {e}")
-        pygame.quit()
-        menu_root.deiconify()
-        return
-
-    # Расчет размеров
-    TILE_SIZE = min(BOARD_AREA_SIZE // board_w, BOARD_AREA_SIZE // board_h)
-    BOARD_START_X = (WINDOW_WIDTH - (TILE_SIZE * board_w)) // 2
-    BOARD_START_Y = BOARD_AREA_START_Y + (BOARD_AREA_SIZE - (TILE_SIZE * board_h)) // 2
-
-    last_time = pygame.time.get_ticks()
-    running = True
-
-    while running:
-        # Расчет времени
-        current_time = pygame.time.get_ticks()
-        delta_time = (current_time - last_time) / 1000.0
-        last_time = current_time
-
-        state = get_state()
-        is_playing = state.get('is_playing', False)
-
-        # --- ОБНОВЛЕНИЕ СОСТОЯНИЯ ---
-        if is_playing:
-            # Обновляем время
-            new_time = state.get('time_elapsed', 0.0) + delta_time
-            set_state('time_elapsed', new_time)
-
-            # Обновляем коэффициент эффективности (ТОТ САМЫЙ МОТОР)
-            set_state('coeff_k', calculate_e())
-
-        # Обработка событий
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                running = False
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                mouse_x, mouse_y = event.pos
-
-                # Клик по таймеру (Старт)
-                if not is_playing:
-                    item_width = WINDOW_WIDTH // 6
-                    timer_rect = pygame.Rect(3 * item_width, 0, item_width, INFO_PANEL_HEIGHT)
-                    if timer_rect.collidepoint(mouse_x, mouse_y):
-                        shuffle_board()
-                        last_time = pygame.time.get_ticks()
-
-                # Клик по доске (Ход)
-                elif is_playing:
-                    if mouse_x >= BOARD_START_X and mouse_y >= BOARD_START_Y:
-                        col = (mouse_x - BOARD_START_X) // TILE_SIZE
-                        row = (mouse_y - BOARD_START_Y) // TILE_SIZE
-                        if 0 <= row < board_h and 0 <= col < board_w:
-                            make_move(row, col)
-
-        # Отрисовка
-        screen.fill(BACKGROUND_COLOR)
-        draw_info_panel(screen, state, font)
-        draw_indicator_panel(screen, state)
-        draw_board(screen, state, TILE_SIZE, BOARD_START_X, BOARD_START_Y, font)
-
-        pygame.display.flip()
-        clock.tick(FPS)
-
-    pygame.quit()
-    sys.exit()
+    menu_root.deiconify()

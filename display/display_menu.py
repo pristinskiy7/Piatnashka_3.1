@@ -1,613 +1,200 @@
 # display/display_menu.py
 
+
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
-from display.handler_tkinter import set_next_scene, get_next_scene
-from players.manager import get_current_player_name, save_current_player, get_all_player_names, delete_player # <--- ДОБАВЛЕН ИМПОРТ
-from players.team_manager import get_team_name, save_team_name  # <--- НОВЫЙ ИМПОРТ
-from settings.preferences import get_board_preferences, set_board_preferences, MIN_SIZE, MAX_SIZE,DEFAULT_SIZE
-from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
-
-
-# Глобальные переменные для управления состоянием комбобоксов
-size_w_var = None
-size_h_var = None
-w_combobox = None
-h_combobox = None
-
-
-root_window = None
-player_name_var = None
-team_name_var = None  # Переменная для хранения имени новой команды
-current_team_name = None  # Фактическое имя существующей команды
-
-
-def handle_create_team():
-    """Обработчик кнопки: сохраняет новое имя команды и перезагружает меню."""
-    global root_window
-
-    new_name = team_name_var.get().strip()
-    if new_name and len(new_name) > 2:
-        # 1. Сохраняем имя команды
-        save_team_name(new_name)
-
-        # 2. Перезапускаем сцену меню, чтобы показать поле выбора игрока
-        set_next_scene('menu')  # Говорим main.py, что нужно перезапустить 'menu'
-        if root_window:
-            root_window.destroy()
-    else:
-        # Простая валидация
-        tk.messagebox.showerror("Ошибка", "Имя команды должно содержать минимум 3 символа.")
-
-
-def close_scene_and_switch(next_scene_name):
-    """Устанавливает следующую сцену и закрывает текущее окно Tkinter."""
-    global root_window, current_team_name
-
-    # Разрешаем переход к игре, только если команда УЖЕ создана
-    if current_team_name is None and next_scene_name == 'game':
-        tk.messagebox.showerror("Ошибка", "Сначала необходимо создать команду.")
-        return
-
-        # 1. Если мы переходим к ИГРЕ, сохраняем выбранного игрока
-    if next_scene_name == 'game':
-        player_name = player_name_var.get().strip()
-        if not player_name:
-            tk.messagebox.showerror("Ошибка", "Пожалуйста, введите имя игрока.")
-            return  # Отменяем переход, если имя игрока пустое
-
-        save_current_player(player_name)
-
-    set_next_scene(next_scene_name)
-    if root_window:
-        root_window.destroy()
-
-
-def setup_team_creation_section(parent_frame):
-    """Отображает секцию для ввода и создания новой команды."""
-    global team_name_var
-
-    team_name_var = tk.StringVar()
-
-    ttk.Label(
-        parent_frame,
-        text="Создание Команды:",
-        font=("Arial", 16, "bold")
-    ).pack(pady=(20, 10))
-
-    input_frame = ttk.Frame(parent_frame)
-    input_frame.pack(pady=10)
-
-    # 1. Текстбокс для имени команды
-    ttk.Entry(
-        input_frame,
-        textvariable=team_name_var,
-        width=30,
-        font=("Arial", 14)
-    ).pack(side=tk.LEFT, padx=10)
-
-    # 2. Кнопка создания
-    ttk.Button(
-        input_frame,
-        text="Создать Команду",
-        command=handle_create_team
-    ).pack(side=tk.LEFT, padx=10)
-
-    ttk.Label(
-        parent_frame,
-        text="Сначала назовите команду, чтобы начать игру.",
-        font=("Arial", 10)
-    ).pack()
-
-
-def handle_player_selection(event=None):
-    """Обработчик для кнопки 'Начать Игру' (если выбрано имя) или 'Добавить Игрока'."""
-    global root_window
-
-    player_name = player_name_var.get().strip()
-
-    # 1. Если выбрана строка-приглашение, считаем это ошибкой (пользователь не выбрал имя)
-    if not player_name or player_name == "Добавить нового игрока":
-        tk.messagebox.showerror("Ошибка", "Пожалуйста, выберите или введите корректное имя игрока.")
-        return
-
-        # 2. Если имя выбрано/введено, сохраняем/добавляем игрока и делаем его активным
-    success = save_current_player(player_name)
-
-    if success:
-        # 3. Перезапускаем сцену меню, чтобы обновить отображение
-        set_next_scene('menu')
-        if root_window:
-            root_window.destroy()
-    else:
-        tk.messagebox.showerror("Ошибка", "Не удалось сохранить игрока.")
-
-
-def handle_combobox_selection(event):
-    """
-    Обработчик, который срабатывает при выборе имени из Combobox.
-    Если выбрано имя игрока - делаем его активным.
-    Если выбрано "Добавить нового игрока" - очищаем поле и ждем ввода.
-    """
-    global root_window
-
-    selected_name = player_name_var.get().strip()
-
-    if selected_name == "Добавить нового игрока":
-        # Если выбрана специальная строка, очищаем поле для ввода
-        player_name_var.set("")
-        # Меняем фокус, чтобы пользователь мог сразу печатать
-        event.widget.focus_set()
-        # Выход, не сохраняем ничего
-        return
-
-    # Если выбрано существующее имя, делаем его активным
-    success = save_current_player(selected_name)
-
-    if success:
-        # Перезапускаем сцену меню, чтобы обновить отображение
-        set_next_scene('menu')
-        if root_window:
-            root_window.destroy()
-    else:
-        tk.messagebox.showerror("Ошибка", "Не удалось сделать игрока активным.")
-
-
-def handle_player_delete():
-    """Обработчик кнопки удаления активного игрока."""
-    global root_window
-
-    player_name = get_current_player_name()
-
-    if not player_name:
-        messagebox.showwarning("Предупреждение", "Нет активного игрока для удаления.")
-        return
-
-    # Запрос подтверждения удаления
-    confirm = messagebox.askyesno(  # <--- Исправлено: messagebox
-        "Подтверждение удаления",
-        f"Вы действительно хотите удалить игрока '{player_name}'? Все его результаты будут утеряны!"
-    )
-
-    if confirm:
-        success = delete_player(player_name)
-
-        if success:
-            messagebox.showinfo("Успех", f"Игрок '{player_name}' успешно удален.")  # <--- Исправлено: messagebox
-
-            # Перезапускаем сцену меню, чтобы обновить отображение
-            set_next_scene('menu')
-            if root_window:
-                root_window.destroy()
-        else:
-            messagebox.showerror("Ошибка", "Не удалось удалить игрока.")  # <--- Исправлено: messagebox
-
-
-
+from tkinter import messagebox, ttk, simpledialog
 import random
-from game.game_loop import start_game_loop  # Убедиться, что импорт есть!
+
+from players.manager import (
+    get_current_player_name, save_current_player,
+    get_all_player_names, add_new_player, delete_player
+)
+from players.team_manager import get_team_name, save_team_name
+from players.cloud_sync import sync_data
 
 
-def start_game(root):
-    """
-    Обрабатывает нажатие кнопки "Начать игру".
-    Принудительно сохраняет настройки W/H, а затем запускает Pygame.
-    """
-    global size_w_var, size_h_var, w_combobox, h_combobox
+def open_leaderboard():
+    """Открывает окно рейтинга с двумя вкладками: Команды и Топ-50 Игроков."""
+    wait_win = tk.Toplevel()
+    wait_win.title("Загрузка...")
+    wait_win.geometry("250x100")
+    tk.Label(wait_win, text="Получаем данные рейтинга...", pady=20).pack()
+    wait_win.update()
 
-    # ----------------------------------------------------
-    # ШАГ 1: ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ И СОХРАНЕНИЕ
-    # Берем текущий текст из виджета и вызываем валидацию.
-    # ----------------------------------------------------
+    result = sync_data()
+    wait_win.destroy()
 
-    # --- Синхронизация и сохранение W ---
-    if w_combobox and size_w_var:
-        current_w_text = w_combobox.get()
-        size_w_var.set(current_w_text)
-        _validate_and_save_size(size_w_var, True)
-
-        # --- Синхронизация и сохранение H ---
-    if h_combobox and size_h_var:
-        current_h_text = h_combobox.get()
-        size_h_var.set(current_h_text)
-        _validate_and_save_size(size_h_var, False)
-
-    # Даем Tkinter микропаузу на обработку сохранения файла
-    root.update_idletasks()
-
-    # ----------------------------------------------------
-    # ШАГ 2: ПРОВЕРКА И ЗАПУСК
-    # ----------------------------------------------------
-
-    active_player = get_current_player_name()
-    if not active_player:
-        messagebox.showerror("Ошибка", "Необходимо выбрать активного игрока.")
+    if not result:
+        messagebox.showerror("Ошибка", "Облако временно недоступно.")
         return
 
-    # Получение настроек поля (теперь они гарантированно свежие)
-    prefs = get_board_preferences()
-    w_setting = prefs['w']
-    h_setting = prefs['h']
-
-    # Определение финальных W и H
-    MIN_VAL = MIN_SIZE
-    MAX_VAL = MAX_SIZE
-
-    final_w = w_setting
-    if w_setting == "RANDOM":
-        final_w = random.randint(MIN_VAL, MAX_VAL)
-
-    final_h = h_setting
-    if h_setting == "RANDOM":
-        final_h = random.randint(MIN_VAL, MAX_VAL)
-
-    if final_w < MIN_VAL or final_h < MIN_VAL:
-        messagebox.showerror("Ошибка", f"Финальный размер поля ({final_w}x{final_h}) слишком мал.")
-        return
-
-    # Вызов главного цикла Pygame
-    print("--- 🔵 [A] Готовимся к вызову start_game_loop... ---")
-    print(f"ЛОГ: Проверка перед Pygame: {active_player} ({final_w}x{final_h})")
-    save_current_player(active_player)
-
-    start_game_loop(root, active_player, final_w, final_h)
-
-    print("--- 🔴 [B] Вызов start_game_loop завершился. ---")
-
-
-# ----------------- КОНСТРУКТОРЫ СЕКЦИЙ -----------------
-def setup_player_selection_section(parent_frame, team_name):
-    """Отображает секцию выбора игрока."""
-    global player_name_var
-
-    # --- 1. ПОЛУЧАЕМ ДАННЫЕ ---
-    current_player_name = get_current_player_name()
-    all_players = get_all_player_names()
-
-    is_new_player_mode = not bool(all_players)  # Режим добавления, если список пуст
-
-    # 1. Отображение имени команды
-    ttk.Label(
-        parent_frame,
-        text=f"АКТИВНАЯ КОМАНДА: {team_name}",
-        font=("Arial", 16, "bold"),
-        foreground="green"
-    ).pack(pady=(20, 10))
-
-    # 2. Создание фрейма для группировки
-    player_frame = ttk.Frame(parent_frame)
-    player_frame.pack(pady=20)
-
-    # 3. Установка текста лейбла и списка значений
-
-    values_list = []  # Список для Combobox
-    button_text = "Сделать Активным"
-
-    if is_new_player_mode:
-        label_text = "Введите имя нового игрока:"
-        initial_value = "Добавить нового игрока"  # Используем как приглашение
-        color = "red"
-        button_text = "Добавить Игрока"
-    else:
-        # Если игроки есть, добавляем их имена
-        values_list.extend(all_players)
-
-        # Добавляем специальную строку в конец списка!
-        values_list.append("Добавить нового игрока")
-
-        # Начальное значение - активный игрок
-        initial_value = current_player_name if current_player_name else all_players[0]
-        label_text = "Активный Игрок:"
-        color = "black"
-
-    # 4. Лейбл
-    ttk.Label(
-        player_frame,
-        text=label_text,
-        font=("Arial", 14)
-    ).pack(side=tk.LEFT, padx=10)
-
-    player_name_var = tk.StringVar(value=initial_value)
-
-    # Определяем, какой виджет использовать: Entry или Combobox
-    if is_new_player_mode:
-        # --- Режим Добавления (Entry), если список пуст ---
-        entry = ttk.Entry(
-            player_frame,
-            textvariable=player_name_var,
-            width=25,
-            font=("Arial", 14),
-            foreground=color
-        )
-        entry.pack(side=tk.LEFT, padx=10)
-
-        # Обработчик для очистки поля "Добавить нового игрока"
-        def clear_on_focus(event):
-            if player_name_var.get() == "Добавить нового игрока":
-                player_name_var.set("")
-                entry.config(foreground="black")
-
-        entry.bind("<FocusIn>", clear_on_focus)
-
-    else:
-        # --- Режим Выбора (Combobox) ---
-        entry = ttk.Combobox(
-            player_frame,
-            textvariable=player_name_var,
-            values=values_list,  # Используем список со строкой-приглашением
-            width=23,
-            font=("Arial", 14)
-        )
-        entry.pack(side=tk.LEFT, padx=10)
-
-        # Привязка события выбора
-        entry.bind("<<ComboboxSelected>>", handle_combobox_selection)
-
-        # Установим начальное значение
-        entry.set(initial_value)
-
-        # 5. КНОПКА "Выбрать/Добавить"
-    # Кнопка нужна всегда в режиме Entry (для сохранения),
-    # и нужна в режиме Combobox, если пользователь ВВЕЛ имя, а не выбрал
-
-    ttk.Button(
-        player_frame,
-        text=button_text,
-        command=handle_player_selection  # Используем общий обработчик для сохранения/активации
-    ).pack(side=tk.LEFT, padx=10)
-
-    # --- НОВАЯ СЕКЦИЯ: КНОПКА УДАЛЕНИЯ ---
-    # Показываем кнопку удаления, только если есть активный игрок
-    if current_player_name:
-        ttk.Button(
-            player_frame,
-            text="Удалить Игрока",
-            command=handle_player_delete,
-            style='Danger.TButton'  # Предполагая, что у вас есть такой стиль для красного цвета
-        ).pack(side=tk.LEFT, padx=10)
-
-
-# display/display_menu.py
-
-# ... (после других вспомогательных функций) ...
-
-def _validate_and_save_size(dimension_var, is_width):
-    """Общая функция для валидации ручного ввода и сохранения W или H."""
-
-    # 1. Загружаем текущие настройки для сброса в случае ошибки
-    current_prefs = get_board_preferences()
-
-    value_str = dimension_var.get().strip()
-    dimension_name = "Ширина (W)" if is_width else "Высота (H)"
-
-    # 2. Проверяем режим "RANDOM"
-    if value_str.upper() == "RANDOM":
-        w = "RANDOM" if is_width else current_prefs['w']
-        h = current_prefs['h'] if is_width else "RANDOM"
-        set_board_preferences(w, h)
-        return True
-
-    # 3. Валидация числового ввода
-    try:
-        value_int = int(value_str)
-        if MIN_SIZE <= value_int <= MAX_SIZE:
-            # Валидное число, сохраняем
-            w = value_int if is_width else current_prefs['w']
-            h = current_prefs['h'] if is_width else value_int
-            set_board_preferences(w, h)
-            print(f"ЛОГ: Размер {dimension_name} сохранен: {value_int}.")
-            return True
-        else:
-            # Невалидный диапазон: сбрасываем значение в поле
-            messagebox.showerror("Ошибка ввода",
-                                 f"Размер {dimension_name} должен быть целым числом от {MIN_SIZE} до {MAX_SIZE}.")
-            # Сбрасываем поле на предыдущее валидное значение (или 4)
-            prev_val = current_prefs['w'] if is_width else current_prefs['h']
-            if prev_val == "RANDOM":
-                dimension_var.set(str(DEFAULT_SIZE))  # Используем 4, если предыдущее было RANDOM
-            else:
-                dimension_var.set(str(prev_val))
-            return False
-
-    except ValueError:
-        # Не число: сбрасываем значение в поле
-        messagebox.showerror("Ошибка ввода", f"Размер {dimension_name} должен быть целым числом.")
-        # Сбрасываем поле на предыдущее валидное значение (или 4)
-        prev_val = current_prefs['w'] if is_width else current_prefs['h']
-        if prev_val == "RANDOM":
-            dimension_var.set(str(DEFAULT_SIZE))
-        else:
-            dimension_var.set(str(prev_val))
-        return False
-
-
-def _handle_mode_change(combobox, dimension_var, is_width, event):
-    """Обработчик выбора 'Выбрать'/'Случайная' из выпадающего списка."""
-    selected_mode = combobox.get()
-
-    if selected_mode == "Случайная":
-        # Устанавливаем режим RANDOM
-        dimension_var.set("RANDOM")
-        combobox.config(state="readonly")  # Запрещаем ручной ввод
-        _validate_and_save_size(dimension_var, is_width)  # Сохраняем немедленно
-
-    elif selected_mode == "Выбрать":
-        # Возвращаем поле в режим ручного ввода
-        current_prefs = get_board_preferences()
-        last_valid_value = current_prefs['w'] if is_width else current_prefs['h']
-
-        # Если последнее сохраненное значение было RANDOM, ставим дефолт
-        if last_valid_value == "RANDOM":
-            last_valid_value = str(MIN_SIZE)
-
-        dimension_var.set(str(last_valid_value))
-        combobox.config(state="normal")  # Разрешаем ручной ввод
-
-    # Сбрасываем текст комбобокса, чтобы он показывал текущее значение (RANDOM или число)
-    combobox.set(dimension_var.get())
-
-
-# display/display_menu.py
-
-# ... (после _handle_mode_change) ...
-
-def setup_size_selection_section(container_frame):
-    """Отрисовывает секцию выбора размера поля (W и H)."""
-    global size_w_var, size_h_var, w_combobox, h_combobox
-
-    # 1. Загружаем текущие настройки
-    current_prefs = get_board_preferences()
-    current_w = current_prefs['w']
-    current_h = current_prefs['h']
-
-    # 2. Создаем заголовок секции
-    size_label = tk.Label(container_frame, text="📏 Настройки размера поля (4-10):", font=("Arial", 12, "bold"),
-                          bg="#E0E0E0")
-    size_label.pack(pady=(10, 5))
-
-    # 3. Фрейм для размещения W и H рядом
-    size_frame = tk.Frame(container_frame, bg="#E0E0E0")
-    size_frame.pack(pady=5)
-
-    # Настройки Combobox
-    modes = ["Выбрать", "Случайная"]
-
-    # --- ШИРИНА (W) ---
-    tk.Label(size_frame, text="Ширина (W):", bg="#E0E0E0", font=("Arial", 10)).pack(side='left', padx=(20, 5))
-
-    # Инициализация переменных и состояния
-    initial_w_value = str(current_w)
-    initial_w_state = "readonly" if current_w == "RANDOM" else "normal"
-
-    if size_w_var is None:
-        size_w_var = tk.StringVar(size_frame, value=initial_w_value)
-
-    w_combobox = ttk.Combobox(
-        size_frame,
-        textvariable=size_w_var,
-        values=modes,
-        state=initial_w_state,
-        width=10,
-        justify='center',
-        font=("Arial", 11)
-    )
-    w_combobox.pack(side='left', padx=(0, 10))
-
-    # Обработчики событий
-    w_combobox.bind('<<ComboboxSelected>>', lambda event: _handle_mode_change(w_combobox, size_w_var, True, event))
-    w_combobox.bind('<FocusOut>', lambda event: _validate_and_save_size(size_w_var, True))
-    w_combobox.bind('<Return>', lambda event: _validate_and_save_size(size_w_var, True))  # <<< НОВАЯ ПРИВЯЗКА
-
-    # --- ВЫСОТА (H) ---
-    tk.Label(size_frame, text="Высота (H):", bg="#E0E0E0", font=("Arial", 10)).pack(side='left', padx=(10, 5))
-
-    # Инициализация переменных и состояния
-    initial_h_value = str(current_h)
-    initial_h_state = "readonly" if current_h == "RANDOM" else "normal"
-
-    if size_h_var is None:
-        size_h_var = tk.StringVar(size_frame, value=initial_h_value)
-
-    h_combobox = ttk.Combobox(
-        size_frame,
-        textvariable=size_h_var,
-        values=modes,
-        state=initial_h_state,
-        width=10,
-        justify='center',
-        font=("Arial", 11)
-    )
-    h_combobox.pack(side='left', padx=(0, 20))
-
-    # Обработчики событий
-    h_combobox.bind('<<ComboboxSelected>>', lambda event: _handle_mode_change(h_combobox, size_h_var, False, event))
-    h_combobox.bind('<FocusOut>', lambda event: _validate_and_save_size(size_h_var, False))
-    h_combobox.bind('<Return>', lambda event: _validate_and_save_size(size_h_var, False))  # <<< НОВАЯ ПРИВЯЗКА
-
+    rank_win = tk.Toplevel()
+    rank_win.title("🏆 Глобальный рейтинг")
+    rank_win.geometry("650x500")
+
+    # Создаем вкладки
+    notebook = ttk.Notebook(rank_win)
+    notebook.pack(expand=True, fill="both", padx=10, pady=10)
+
+    # --- ВКЛАДКА 1: КОМАНДЫ ---
+    frame_teams = tk.Frame(notebook)
+    notebook.add(frame_teams, text=" 👥 Топ-10 Команд ")
+
+    cols_t = ("Rank", "Team", "Total_XP", "Size")
+    tree_t = ttk.Treeview(frame_teams, columns=cols_t, show='headings')
+    tree_t.heading("Rank", text="№");
+    tree_t.column("Rank", width=40, anchor="center")
+    tree_t.heading("Team", text="Команда");
+    tree_t.column("Team", width=250)
+    tree_t.heading("Total_XP", text="Суммарный XP");
+    tree_t.column("Total_XP", width=120, anchor="center")
+    tree_t.heading("Size", text="Участников");
+    tree_t.column("Size", width=100, anchor="center")
+
+    for i, team in enumerate(result["teams"], 1):
+        tree_t.insert("", "end",
+                      values=(i, team.get("team_name"), int(team.get("total_xp", 0)), team.get("players_count")))
+    tree_t.pack(expand=True, fill="both", padx=5, pady=5)
+
+    # --- ВКЛАДКА 2: ИГРОКИ (ТОП-50) ---
+    frame_players = tk.Frame(notebook)
+    notebook.add(frame_players, text=" 🎖️ Топ-50 Мастеров (Best XP) ")
+
+    cols_p = ("Rank", "Player", "Best_XP", "Board", "Team")
+    tree_p = ttk.Treeview(frame_players, columns=cols_p, show='headings')
+    tree_p.heading("Rank", text="№");
+    tree_p.column("Rank", width=30, anchor="center")
+    tree_p.heading("Player", text="Игрок");
+    tree_p.column("Player", width=150)
+    tree_p.heading("Best_XP", text="Рекорд XP");
+    tree_p.column("Best_XP", width=90, anchor="center")
+    tree_p.heading("Board", text="Поле");
+    tree_p.column("Board", width=70, anchor="center")
+    tree_p.heading("Team", text="Команда");
+    tree_p.column("Team", width=150)
+
+    for i, p in enumerate(result["players"], 1):
+        tree_p.insert("", "end",
+                      values=(i, p.get("player_name"), int(p.get("best_xp", 0)), p.get("board"), p.get("team_name")))
+
+    # Добавляем полосу прокрутки для топ-50
+    scrollbar = ttk.Scrollbar(frame_players, orient="vertical", command=tree_p.yview)
+    tree_p.configure(yscrollcommand=scrollbar.set)
+    tree_p.pack(side="left", expand=True, fill="both", padx=(5, 0), pady=5)
+    scrollbar.pack(side="right", fill="y", pady=5)
+
+    tk.Button(rank_win, text="Закрыть", command=rank_win.destroy, bg="#d1e7ff").pack(pady=10)
 
 def show_menu():
-    """Создает и отображает главное меню с логикой проверки команды."""
-    global root_window, current_team_name
+    root = tk.Tk()
+    root.title("Пятнашки 2026 - Управление")
+    root.geometry("450x700")  # Увеличил высоту для ползунков
 
-    # --- 1. ПРОВЕРКА НАЛИЧИЯ КОМАНДЫ ---
-    current_team_name = get_team_name()  # Используем team_manager
+    def refresh():
+        root.destroy()
+        show_menu()
 
-    root_window = tk.Tk()
-    root_window.title(WINDOW_TITLE + " - Главное Меню")
+    t_name = get_team_name()
 
-    # Центрирование окна (код без изменений)
-    screen_width = root_window.winfo_screenwidth()
-    screen_height = root_window.winfo_screenheight()
-    x = (screen_width / 2) - (WINDOW_WIDTH / 2)
-    y = (screen_height / 2) - (WINDOW_HEIGHT / 2)
-    root_window.geometry(f'{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{int(x)}+{int(y)}')
-    root_window.resizable(False, False)
+    # --- СЦЕНА 1: ЕСЛИ НЕТ КОМАНДЫ ---
+    if not t_name:
+        tk.Label(root, text="СОЗДАНИЕ НОВОЙ КОМАНДЫ", font=("Arial", 12, "bold")).pack(pady=20)
+        e = tk.Entry(root, font=("Arial", 12))
+        e.pack(pady=10)
 
-    main_frame = ttk.Frame(root_window, padding="40")
-    main_frame.pack(fill='both', expand=True)
+        def create_t():
+            name = e.get().strip()
+            if name:
+                save_team_name(name)
+                refresh()
+            else:
+                messagebox.showwarning("!", "Введите название команды")
 
-    # 2. Заголовок
-    ttk.Label(
-        main_frame,
-        text="Главное Меню Игры",
-        font=("Arial", 28, "bold")
-    ).pack(pady=30)
+        tk.Button(root, text="Создать команду", command=create_t, bg="lightgreen", font=("Arial", 10, "bold")).pack(
+            pady=10)
 
-    # --- 3. УСЛОВНАЯ СЕКЦИЯ ИДЕНТИФИКАЦИИ ---
-
-    id_frame = ttk.Frame(main_frame)
-    id_frame.pack(pady=20)
-
-    if current_team_name:
-        # ------------------- 2. СЕКЦИЯ ВЫБОРА ИГРОКА -------------------
-        # Этот вызов должен остаться!
-        setup_player_selection_section(id_frame, current_team_name)
-
-        # ------------------- 3. СЕКЦИЯ ВЫБОРА РАЗМЕРА ПОЛЯ -------------------
-        # ЭТОТ ВЫЗОВ МЫ ДОБАВЛЯЕМ
-        setup_size_selection_section(id_frame)
+    # --- СЦЕНА 2: ГЛАВНОЕ МЕНЮ ---
     else:
-        # Если команды НЕТ: показываем поле для ее создания
-        setup_team_creation_section(id_frame)
+        tk.Label(root, text=f"Команда: {t_name}", font=("Arial", 14, "bold"), fg="blue").pack(pady=10)
 
-    # --- 4. Секция Кнопок (без изменений, кроме проверки в close_scene_and_switch) ---
+        curr_p = get_current_player_name()
+        tk.Label(root, text=f"Текущий игрок: {curr_p or '---'}", font=("Arial", 11, "italic")).pack()
 
-    button_frame = ttk.Frame(main_frame)
-    button_frame.pack(pady=40)
+        # --- БЛОК НАСТРОЙКИ ПОЛЯ ---
+        size_frame = tk.LabelFrame(root, text=" Размер поля (от 4 до 10) ", padx=10, pady=10)
+        size_frame.pack(pady=15, fill="x", padx=40)
 
-    # 1. Начать Игру
-    ttk.Button(
-        button_frame,
-        text="▶️ Начать Игру ",
-        command=lambda: start_game(root_window),  # <<< ИЗМЕНЕНО! Вызываем start_game
-        width=25
-    ).pack(pady=15)
+        tk.Label(size_frame, text="Ширина:").grid(row=0, column=0)
+        w_scale = tk.Scale(size_frame, from_=4, to=10, orient="horizontal")
+        w_scale.set(4)
+        w_scale.grid(row=0, column=1, sticky="we")
 
-    # 2. Таблица Рекордов
-    ttk.Button(
-        button_frame,
-        text="Таблица Рекордов",
-        command=lambda: close_scene_and_switch('results'),
-        width=25
-    ).pack(pady=15)
+        tk.Label(size_frame, text="Высота:").grid(row=1, column=0)
+        h_scale = tk.Scale(size_frame, from_=4, to=10, orient="horizontal")
+        h_scale.set(4)
+        h_scale.grid(row=1, column=1, sticky="we")
+        size_frame.columnconfigure(1, weight=1)
 
-    # 3. Настройки
-    ttk.Button(
-        button_frame,
-        text="Настройки (WIP)",
-        command=lambda: print("Кнопка 'Настройки' нажата."),
-        width=25
-    ).pack(pady=15)
+        rand_var = tk.BooleanVar()
+        tk.Checkbutton(root, text="Случайный размер при старте", variable=rand_var).pack()
 
-    # 4. Выход
-    ttk.Button(
-        button_frame,
-        text="Выход",
-        command=lambda: close_scene_and_switch('exit'),
-        width=25
-    ).pack(pady=30)
+        # Кнопка ИГРАТЬ
+        def start_game():
+            if not curr_p:
+                messagebox.showwarning("!", "Сначала добавьте игрока!")
+                return
 
-    root_window.mainloop()
+            if rand_var.get():
+                w, h = random.randint(4, 10), random.randint(4, 10)
+            else:
+                w, h = w_scale.get(), h_scale.get()
 
-    return get_next_scene()
+            from game.game_loop import start_game_loop
+            root.withdraw()
+            start_game_loop(root, curr_p, w, h)
+
+        tk.Button(root, text="🎮 В БОЙ!", command=start_game, bg="#c8e6c9",
+                  font=("Arial", 14, "bold"), height=2).pack(pady=10, fill='x', padx=50)
+
+        # --- УПРАВЛЕНИЕ ИГРОКАМИ ---
+        btn_frame = tk.Frame(root)
+        btn_frame.pack(pady=10)
+
+        def add_p():
+            name = simpledialog.askstring("Новый игрок", "Введите имя игрока:")
+            if name and name.strip():
+                if add_new_player(name.strip()):
+                    refresh()
+                else:
+                    messagebox.showerror("Ошибка", "Имя занято")
+
+        def del_p():
+            if not curr_p: return
+            if messagebox.askyesno("Удаление", f"Удалить игрока {curr_p}?\n(Если он последний, команда удалится)"):
+                delete_player(curr_p)
+                refresh()
+
+        tk.Button(btn_frame, text="➕ Добавить", command=add_p, bg="#e3f2fd", width=12).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="❌ Удалить", command=del_p, bg="#ffebee", width=12).pack(side="left", padx=5)
+
+        all_p = get_all_player_names()
+        if all_p:
+            tk.Label(root, text="Сменить игрока:").pack(pady=(5, 0))
+            p_var = tk.StringVar(root)
+            p_var.set(curr_p)
+            om = tk.OptionMenu(root, p_var, *all_p, command=lambda v: [save_current_player(v), refresh()])
+            om.pack(pady=5)
+
+        # Кнопка РЕЙТИНГА
+        tk.Button(root, text="🌐 ГЛОБАЛЬНЫЙ РЕЙТИНГ", command=open_leaderboard,
+                  bg="#bbdefb", font=("Arial", 10, "bold")).pack(pady=20, fill='x', padx=50)
+
+    tk.Button(root, text="Выход из программы", command=root.quit, fg="red").pack(side="bottom", pady=20)
+
+    # Центрирование
+    root.update_idletasks()
+    x = (root.winfo_screenwidth() // 2) - (root.winfo_width() // 2)
+    y = (root.winfo_screenheight() // 2) - (root.winfo_height() // 2)
+    root.geometry(f"+{x}+{y}")
+
+    root.mainloop()

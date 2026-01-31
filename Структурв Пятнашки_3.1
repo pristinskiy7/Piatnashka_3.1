@@ -23,37 +23,19 @@
 │   │
 │   ├── display_menu.py                                                     # Отображение меню
 │   │   ├── import tkinter as tk
-│   │   ├── from tkinter import ttk
-│   │   ├── from tkinter import messagebox # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
-│   │   ├── from display.handler_tkinter import set_next_scene, get_next_scene
-│   │   ├── from players.manager import get_current_player_name, save_current_player, get_all_player_names, delete_player # <--- ДОБАВЛЕН ИМПОРТ
-│   │   ├── from players.team_manager import get_team_name, save_team_name  # <--- НОВЫЙ ИМПОРТ
-│   │   ├── from settings.preferences import get_board_preferences, set_board_preferences, MIN_SIZE, MAX_SIZE,DEFAULT_SIZE
-│   │   ├── from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
+│   │   ├── from tkinter import messagebox, ttk, simpledialog
+│   │   ├── import random
+│   │   ├── from players.manager import (get_current_player_name, save_current_player,get_all_player_names, add_new_player, delete_player)
+│   │   ├── from players.team_manager import get_team_name, save_team_name
+│   │   ├── from players.cloud_sync import sync_data
 │   │   │
-│   │   ├── size_w_var = None
-│   │   ├── size_h_var = None
-│   │   ├── w_combobox = None
-│   │   ├── h_combobox = None
-│   │   ├── root_window = None                                              # Хранит объект главного окна Tkinter
-│   │   ├── player_name_var = None
-│   │   ├── team_name_var = None                                            # Переменная для хранения имени новой команды
-│   │   ├── current_team_name = None                                        # Фактическое имя существующей команды
-│   │   ├── def handle_create_team():                                       # Обработчик кнопки: сохраняет новое имя команды и перезагружает меню. 
-│   │   ├── def close_scene_and_switch(next_scene_name):                    # Устанавливает следующую сцену и закрывает текущее окно Tkinter.
-│   │   ├── def setup_team_creation_section(parent_frame):                  # Отображает секцию для ввода и создания новой команды.
-│   │   ├── def handle_player_selection(event=None):                        # Обработчик для кнопки 'Начать Игру' (если выбрано имя) или 'Добавить Игрока'.
-│   │   ├── def handle_combobox_selection(event):                           # Обработчик, который срабатывает при выборе имени из Combobox.
-│   │   │                                                                     Если выбрано имя игрока - делаем его активным.
-│   │   │                                                                     Если выбрано "Добавить нового игрока" - очищаем поле и ждем ввода.
-│   │   ├── def handle_player_delete():                                     # Обработчик кнопки удаления активного игрока."""
-│   │   ├── def start_game(root):                                           # Обрабатывает нажатие кнопки "Начать игру". Принудительно сохраняет настройки W/H, 
-│   │   │                                                                              а затем запускает Pygame.  
-│   │   ├── def setup_player_selection_section(parent_frame, team_name):    # Отображает секцию выбора игрока.
-│   │   ├── def _validate_and_save_size(dimension_var, is_width):           # Общая функция для валидации ручного ввода и сохранения W или H."""
-│   │   ├── def _handle_mode_change(combobox, dimension_var, is_width, event):   # Обработчик выбора 'Выбрать'/'Случайная' из выпадающего списка."""
-│   │   ├── def setup_size_selection_section(container_frame):              # Отрисовывает секцию выбора размера поля (W и H)."""
-│   │   └── def show_menu():                                                # Создает и отображает главное меню с логикой проверки команды."""
+│   │   ├── def open_leaderboard():                                         # Открывает окно рейтинга с двумя вкладками: Команды и Топ-50 Игроков."""# Обработчик кнопки: сохраняет новое имя команды и перезагружает меню. 
+│   │   └── def show_menu():
+│   │       └── def refresh():
+│   │           ├── def create_t():
+│   │           ├── def def start_game():
+│   │           ├── def add_p():
+│   │           └── def del_p():
 │   │
 │   └── handler_tkinter.py                                                  # Обработка событий Pygame (например, обработка хода)
 │       ├── NEXT_SCENE = 'exit'                                             # Переменная для хранения следующей сцены, которую вернет Tkinter
@@ -63,46 +45,39 @@
 ├── game/                                                                   # игровая логика 
 │   ├── game_loop.py
 │   │   ├── import pygame
-│   │   ├── import sys
-│   │   ├── import math
-│   │   ├── from tkinter import messagebox
-│   │   ├── from game.logic import shuffle_board, make_move, is_tile_in_place
+│   │   ├── from game.logic import (shuffle_board, make_move, is_tile_in_place,calculate_current_xp, is_solved, get_rank_info)
 │   │   ├── from game.state import get_state, init_game_state, set_state
 │   │   ├── from settings.config import WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE
 │   │   │
 │   │   ├── FPS = 60
-│   │   ├── INDICATOR_PADDING_X = 10
-│   │   ├── INDICATOR_INNER_WIDTH = WINDOW_WIDTH - 2 * INDICATOR_PADDING_X  # 1180
-│   │   ├── LOG_SCALE_POINTS = [0.01, 0.1, 1.0, 10.0]                       # Основные метки между 0 и N (площадью)
-│   │   ├── INFO_PANEL_HEIGHT = 60
+│   │   ├── INFO_PANEL_HEIGHT = 80
 │   │   ├── INDICATOR_HEIGHT = 60
-│   │   ├── BOARD_AREA_SIZE = 600                                           # Фиксированная область 600x600 для поля
-│   │   ├── BOARD_AREA_START_Y = INFO_PANEL_HEIGHT + INDICATOR_HEIGHT       # = 120
+│   │   ├── BOARD_AREA_SIZE = 600
+│   │   ├── BOARD_AREA_START_Y
 │   │   ├── WHITE = (255, 255, 255)
 │   │   ├── BLACK = (0, 0, 0)
 │   │   ├── BACKGROUND_COLOR = (220, 220, 220)                              # Светло-серый фон
+│   │   ├── BOARD_BG_COLOR = (80, 80, 80)
 │   │   ├── TILE_COLOR = (150, 150, 255)                                    # Цвет плитки
-│   │   ├── TILE_BORDER = 2                                                 # Ширина рамки
-│   │   ├── MARGIN = 10                                                     # Отступ
 │   │   ├── TILE_COLOR_SOLVED = (100, 255, 100)                             # Ярко-зеленый цвет
-│   │   ├── TILE_COLOR = (150, 150, 255)                                    # Цвет плитки (оригинальный)
+│   │   ├── GOLD = (255, 215, 0)
 │   │   ├── def draw_info_panel(screen, state, font):                       # Отрисовывает 6 информационных блоков в верхней части окна (Зона А)."""
 │   │   ├── def draw_indicator_panel(screen, state):                        # Отрисовывает индикатор коэффициента K (Зона Б) по строго логарифмической шкале (база 10)."""
-│   │   ├── def draw_board(screen, state, TILE_SIZE, start_x, start_y, font):   # Отрисовывает игровое поле и плитки (Зона В)."""
+│   │   ├── def draw_victory_screen(screen, state, font):
 │   │   └── def start_game_loop(menu_root, player_name, board_w, board_h):
+│   │   
 │   ├── logic.py                                                            # Счетчик ходов, таймер, статусы, флаги
 │   │   ├── import random
 │   │   ├── from game.state import get_state, set_state
 │   │   │
-│   │   ├── def is_solved(state):                                           # Проверяет, выиграна ли игра: все плитки на своих местах и 0 в правом нижнем углу.
-│   │   ├── def get_inversions_count(flat_tiles):                           # Считает количество инверсий в линеаризованном списке плиток (исключая 0).
-│   │   ├── def get_target_pos(tile_value, board_w, board_h):               # Повертає цільову (фінальну) позицію (r, c) для даної плитки. Пуста плитка (0) знаходиться в правому нижньому куті.
-│   │   ├── def calculate_initial_S(tiles, board_w, board_h):               # Рассчитывает початкову складність (S) на основі суми Манхеттенської відстані та кількості інверсій (з вагою 3). S використовується як нормалізаційний фактор.
-│   │   ├── def is_solvable(board_w, board_h, flat_tiles):                  #  Проверяет решаемость головоломки N-Puzzle (Пятнашки)."""
-│   │   ├── def is_tile_in_place(tile_value, row, col, board_w, board_h):   # Проверяет, стоит ли плитка на своем конечном месте в упорядоченном поле.Пустая ячейка (0) считается "на своем месте", только если она в самом конце.
+│   │   ├── def get_rank_info(total_xp):                                    # Рассчитывает уровень и звание на основе общего XP."""
+│   │   ├── def calculate_current_xp():                                     # Прогноз XP за текущую партию на основе точности и времени."""
+│   │   ├── def is_solved(state):                                           # Проверяет, собрана ли головоломка."""
+│   │   ├── def is_tile_in_place(tile_value, row, col, board_w, board_h):   # Нужна для подсветки плиток, стоящих на верном месте."""
+│   │   ├── def is_solvable(board_w, board_h, flat_tiles):                  # Проверяет решаемость головоломки N-Puzzle (Пятнашки)."""
 │   │   ├── def shuffle_board():                                            # Перемешивает плитки, гарантируя решаемую раскладку, сбрасывает счетчики и запускает игру.
-│   │   ├── def get_empty_tile_pos(tiles, board_w, board_h):                # Находит координаты пустой ячейки (0)."""
 │   │   └── def make_move(tile_row, tile_col):                              # Обрабатывает ход, сдвигает ряд/столбец и проверяет условие победы.
+│   │
 │   └── state.py                                                            # логика ходов, проверка завершения, проверка решаемости
 │       ├── _GAME_STATE =                                                   # Глобальная переменная для хранения состояния
 │       ├── def init_game_state(player_name, board_w, board_h):             # Заполняет глобальное состояние игры начальными параметрами и создает упорядоченное поле.
@@ -110,38 +85,52 @@
 │       └── def set_state(key, value):                                      # Обновляет значение в состоянии игры."""
 │
 ├── players/                                                                # работа с игроками
+│   ├── cloud_sync.py
+│   │   ├── CONNECTION_STRING
+│   │   └── def sync_data():
+│   │
 │   ├── manager.py                                                          # выбор игрока, создание нового
 │   │   ├── import json
 │   │   ├── import os
-│   │   ├── import datetime
 │   │   ├── from players.team_manager import get_team_name, reset_team
 │   │   │
 │   │   ├── PLAYERS_FILE = 'players.json'
 │   │   ├── def _load_players_data():                                       # Загружает данные игроков и активного игрока, гарантируя структуру по умолчанию."""
 │   │   ├── def _save_players_data(data):                                   # Сохраняет данные игроков в players.json."""
-│   │   ├── def get_current_player_name():                                  # Возвращает имя активного игрока.
-│   │   │                                                                     Возвращает None, если активный игрок не назначен или команда не создана.
-│   │   ├── def get_all_player_names():                                     # Возвращает список имен всех игроков в команде."""
-│   │   ├── def save_current_player(player_name):                           # Сохраняет игрока (если новый) и делает его активным.
-│   │   ├── def delete_player(name_to_delete):                              # Удаляет игрока из списка.
-│   │   │                                                                     Если удаляется последний игрок, удаляет команду.
-│   │   └── def save_result(*args, **kwargs):
+│   │   ├── def add_new_player(name):
+│   │   ├── def delete_player(name):
+│   │   ├── def get_current_player_name():
+│   │   ├── def save_current_player(name):
+│   │   ├── def get_all_player_names():
+│   │   └── def save_result(moves, time_spent, xp_gained, board_size):
 │   │
 │   └── team_manager.py
 │       ├── import json
 │       ├── import os
+│       ├── import datetime
 │       │
 │       ├── TEAM_FILE = 'team.json'  
 │       ├── TEAM_KEY = 'team_name'
-│       ├── def get_team_name():                                            # Загружает название команды из team.json. Возвращает None, если файла нет, он поврежден 
-│       │                                                                     или имеет неверный формат.
-│       ├── def save_team_name(name):                                       # Сохраняет название команды в team.json.
-│       └── def reset_team():                                               # Удаляет файл team.json, распуская команду."""
+│       ├── def reset_team():
+│       ├── def ensure_team_id():                """Проверяет наличие team_id и создаёт его, если его нет (для старых команд)."""
+│       ├── def save_team_name(name):          """Сохраняет название команды и время её создания (ID команды)."""
+│       ├── def _load_team_full_data():              """Вспомогательная: грузит весь объект команды."""
+│       ├── def get_team_name():
+│       └── def get_team_id():
+│
 ├── settings/                                                               # настройки игры 
 │	├── config.py                                                           # глобальные параметры (цвета, размеры окна)
 │   │   ├── WINDOW_WIDTH = 1200                                             # Ширина окна приложения в пикселях
 │   │   ├── WINDOW_HEIGHT = 1000                                            # Высота окна приложения в пикселях
-│   │   └── WINDOW_TITLE = "Игра 'Суперпятнашки'"                           # Заголовок окна приложения
+│   │   ├── WINDOW_TITLE = "Игра 'Суперпятнашки'"                           # Заголовок окна приложения
+│   │   ├── WHITE = (255, 255, 255)
+│   │   ├── BLACK = (0, 0, 0)
+│   │   ├── BACKGROUND_COLOR = (240, 240, 240)
+│   │   ├── TILE_COLOR = (150, 150, 255)  # Цвет плитки (светло-голубой)
+│   │   ├── HIGHLIGHT_COLOR = (255, 200, 0) # Цвет для подсветки
+│   │   ├── MARGIN = 10 # Отступ от краев окна
+│   │   └── TILE_BORDER = 2 # Ширина рамки вокруг плитки
+│   │
 │   └── preferences.py                                                      # пользовательские настройки│
 │       ├── import json
 │       ├── import os
@@ -165,8 +154,4 @@
 │   └── def main():                                                         # Главный цикл и менеджер сцен."""
 ├── players.json                                                            # Игроки и их статистика
 ├── settings.json                                                           # Сохраненные настройки
-├── team.json                                                               # Статистика лиги
-└── 
-
-
-
+└── team.json                                                               # Статистика лиги
